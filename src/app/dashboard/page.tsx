@@ -1,10 +1,14 @@
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   getBasketKpi,
+  getCalendarUpcoming,
   getOrdersByHourDow,
   getOrdersFunnel,
   getOrdersKpi,
+  getProductsPaginated,
+  getRecentActivity,
   getRevenueByCategory,
+  getRevenueBySegmentMonthly,
   getRevenueKpi,
   getRevenueMonthly,
   getShipmentsByHub,
@@ -15,7 +19,9 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/sign-out-button";
 import { TweaksToggle } from "@/components/tweaks-toggle";
+import { Activity } from "@/components/widgets/activity";
 import { BarChartWidget } from "@/components/widgets/bar-chart";
+import { Calendar } from "@/components/widgets/calendar";
 import { DonutExploded } from "@/components/widgets/donut-exploded";
 import { Funnel } from "@/components/widgets/funnel";
 import { Gauge } from "@/components/widgets/gauge";
@@ -26,7 +32,9 @@ import { KpiRing } from "@/components/widgets/kpi-ring";
 import { KpiTypo } from "@/components/widgets/kpi-typo";
 import { LineChartWidget } from "@/components/widgets/line-chart";
 import { MapWidget } from "@/components/widgets/map";
+import { ProductsTable } from "@/components/widgets/products-table";
 import { Ranking } from "@/components/widgets/ranking";
+import { Stacked } from "@/components/widgets/stacked";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -44,6 +52,10 @@ export default async function DashboardPage() {
     funnel,
     hubs,
     countries,
+    segmentMonthly,
+    calendar,
+    activity,
+    productsPage,
   ] = await Promise.all([
     getRevenueKpi(supabase),
     getOrdersKpi(supabase, 7),
@@ -56,6 +68,10 @@ export default async function DashboardPage() {
     getOrdersFunnel(supabase, 30),
     getShipmentsByHub(supabase),
     getTopCountries(supabase, 5),
+    getRevenueBySegmentMonthly(supabase, 6),
+    getCalendarUpcoming(supabase, 4),
+    getRecentActivity(supabase, 8),
+    getProductsPaginated(supabase, { limit: 10 }),
   ]);
 
   return (
@@ -99,11 +115,14 @@ export default async function DashboardPage() {
         <MapWidget data={hubs} />
       </section>
 
-      <section
-        className="border border-dashed border-[var(--line-2)] p-10 text-center text-sm text-[var(--ink-3)]"
-        style={{ borderRadius: "var(--radius)" }}
-      >
-        Widgets W13-W16 (Calendar, Activity, Table, Stacked) seront branchés en Phase 10.
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Stacked data={segmentMonthly} />
+        <Calendar data={calendar} />
+        <Activity data={activity} />
+      </section>
+
+      <section>
+        <ProductsTable initialPage={productsPage} />
       </section>
     </main>
   );

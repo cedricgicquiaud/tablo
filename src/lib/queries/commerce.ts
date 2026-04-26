@@ -67,6 +67,46 @@ export type CountryRanking = {
   deltaPct: number;
 };
 
+export type SegmentMonthlyPoint = {
+  month: Date;
+  segment: string;
+  revenueCents: number;
+};
+
+export type ActivityEntry = {
+  customerEmail: string;
+  type: string;
+  actionLabel: string;
+  detail: string;
+  occurredAt: Date;
+};
+
+export type ProductRow = {
+  id: string;
+  sku: string;
+  name: string;
+  category: string;
+  segment: string;
+  priceCents: number;
+  status: string;
+  stock: number;
+  rating: number;
+  createdAt: Date;
+};
+
+export type ProductsPage = {
+  rows: ProductRow[];
+  total: number;
+};
+
+export type CalendarEntry = {
+  id: string;
+  title: string;
+  tag: string;
+  startsAt: Date;
+  durationMin: number;
+};
+
 export async function getRevenueKpi(client: DashboardClient): Promise<RevenueKpi> {
   const { data, error } = await client.rpc("revenue_kpi").single();
   if (error) throw new Error(error.message);
@@ -195,5 +235,99 @@ export async function getTopCountries(
     country: row.country,
     revenueCents: row.revenue_cents,
     deltaPct: Number(row.delta_pct),
+  }));
+}
+
+export async function getRevenueBySegmentMonthly(
+  client: DashboardClient,
+  months = 6,
+): Promise<SegmentMonthlyPoint[]> {
+  const { data, error } = await client.rpc("revenue_by_segment_monthly", { months });
+  if (error) throw new Error(error.message);
+  return data.map((row) => ({
+    month: new Date(row.month),
+    segment: row.segment,
+    revenueCents: row.revenue_cents,
+  }));
+}
+
+export async function getRecentActivity(
+  client: DashboardClient,
+  limit = 10,
+): Promise<ActivityEntry[]> {
+  const { data, error } = await client.rpc("recent_activity", { limit_n: limit });
+  if (error) throw new Error(error.message);
+  return data.map((row) => ({
+    customerEmail: row.customer_email,
+    type: row.type,
+    actionLabel: row.action_label,
+    detail: row.detail,
+    occurredAt: new Date(row.occurred_at),
+  }));
+}
+
+type ProductsPaginatedRow = {
+  id: string;
+  sku: string;
+  name: string;
+  category: string;
+  segment: string;
+  price_cents: number;
+  status: string;
+  stock: number;
+  rating: number;
+  created_at: string;
+};
+
+export async function getProductsPaginated(
+  client: DashboardClient,
+  params: {
+    search?: string;
+    sortCol?: "created_at" | "price_cents" | "stock" | "rating" | "name";
+    sortDir?: "asc" | "desc";
+    limit?: number;
+    offset?: number;
+  } = {},
+): Promise<ProductsPage> {
+  const { data, error } = await client
+    .rpc("products_paginated", {
+      search: params.search ?? "",
+      sort_col: params.sortCol ?? "created_at",
+      sort_dir: params.sortDir ?? "desc",
+      limit_n: params.limit ?? 20,
+      offset_n: params.offset ?? 0,
+    })
+    .single();
+  if (error) throw new Error(error.message);
+  const rowsRaw = (data.rows ?? []) as unknown as ProductsPaginatedRow[];
+  return {
+    rows: rowsRaw.map((row) => ({
+      id: row.id,
+      sku: row.sku,
+      name: row.name,
+      category: row.category,
+      segment: row.segment,
+      priceCents: row.price_cents,
+      status: row.status,
+      stock: row.stock,
+      rating: row.rating,
+      createdAt: new Date(row.created_at),
+    })),
+    total: Number(data.total),
+  };
+}
+
+export async function getCalendarUpcoming(
+  client: DashboardClient,
+  limit = 4,
+): Promise<CalendarEntry[]> {
+  const { data, error } = await client.rpc("calendar_upcoming", { limit_n: limit });
+  if (error) throw new Error(error.message);
+  return data.map((row) => ({
+    id: row.id,
+    title: row.title,
+    tag: row.tag,
+    startsAt: new Date(row.starts_at),
+    durationMin: row.duration_min,
   }));
 }

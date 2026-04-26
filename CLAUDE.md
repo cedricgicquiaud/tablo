@@ -68,9 +68,10 @@ Phases livrées :
 - Phase 06 (design tokens terracotta+crème, restyle login/dashboard, tweaks theme+radius) — PR #6 mergée.
 - Phase 07 (KPI widgets W01-W04 + format helpers) — PR #7 mergée.
 - Phase 08 (Charts widgets W05-W08) — PR #8 mergée.
-- Phase 09 (Advanced widgets W09-W12 + RPCs R9-R12 en PR groupée) — PR à créer.
+- Phase 09 (Advanced widgets W09-W12 + RPCs R9-R12) — PR #9 mergée.
+- Phase 10 (List widgets W13-W16 + RPCs R13-R16) — PR à créer. **Le dashboard contient désormais les 16 widgets complets du design handoff.**
 
-Prochaine : **Phase 10** — List widgets W13-W16 (Calendar, Activity, Table, Stacked). Nécessite RPCs R13/R14/R15/R16 (`revenue_by_segment_monthly`, `recent_activity`, `products_paginated`, `calendar_upcoming`) en parallèle. Le dashboard contiendra alors les 16 widgets complets.
+Prochaine : **Phase 11 — DELIVER** : déploiement Vercel, README final avec captures d'écran, Lighthouse Perf+A11y ≥ 90, vérification grep `service_role` dans le bundle, UAT global. Fin du template e-commerce.
 
 > Design handoff : tous les widgets et tokens sont décrits dans `design_handoff_dashboard_widgets/README.md` — fidélité hifi exigée (D007).
 

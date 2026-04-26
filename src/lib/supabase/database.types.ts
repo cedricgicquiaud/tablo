@@ -295,6 +295,18 @@ export type Database = {
           delta_pct: number
         }[]
       }
+      calendar_upcoming: {
+        Args: {
+          limit_n?: number
+        }
+        Returns: {
+          id: string
+          title: string
+          tag: string
+          starts_at: string
+          duration_min: number
+        }[]
+      }
       orders_by_hour_dow: {
         Args: {
           days?: number
@@ -325,10 +337,45 @@ export type Database = {
           daily_cents: number[]
         }[]
       }
+      products_paginated: {
+        Args: {
+          search?: string
+          sort_col?: string
+          sort_dir?: string
+          limit_n?: number
+          offset_n?: number
+        }
+        Returns: {
+          rows: Json
+          total: number
+        }[]
+      }
+      recent_activity: {
+        Args: {
+          limit_n?: number
+        }
+        Returns: {
+          customer_email: string
+          type: string
+          action_label: string
+          detail: string
+          occurred_at: string
+        }[]
+      }
       revenue_by_category: {
         Args: Record<PropertyKey, never>
         Returns: {
           category: string
+          revenue_cents: number
+        }[]
+      }
+      revenue_by_segment_monthly: {
+        Args: {
+          months?: number
+        }
+        Returns: {
+          month: string
+          segment: string
           revenue_cents: number
         }[]
       }
