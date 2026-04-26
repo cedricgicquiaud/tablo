@@ -61,11 +61,12 @@ supabase/
 **Pivot scope 2026-04-26** : passage SaaS Analytics → E-commerce après réception du design handoff (`design_handoff_dashboard_widgets/`). Voir `.workflow/PRD.md` v2 et D006/D007 dans `.workflow/DECISIONS.md`.
 
 Phases livrées :
-- Phase 02 (data access infrastructure : env/admin/types/SSR-CSR clients) — PR #2 mergée. Wrappers SaaS supprimés en Phase 04.
-- Phase 03 (auth login + proxy Next.js 16) — PR #3 mergée. Domain-agnostique.
-- Phase 04 (e-commerce schema + RPCs core R1-R5/R7-R8 + seed faker) — PR à créer sur `feature/04-ecommerce-schema`.
+- Phase 02 (data access infrastructure) — PR #2 mergée.
+- Phase 03 (auth login + proxy Next.js 16) — PR #3 mergée.
+- Phase 04 (e-commerce schema + RPCs core R1-R5/R7-R8 + seed faker) — PR #4 mergée.
+- Phase 05 (commerce wrappers TS : 7 fonctions camelCase + Date) — PR à créer.
 
-Prochaine : **Phase 05** — wrappers TypeScript autour des RPCs e-commerce (`getRevenueKpi`, `getOrdersKpi`, `getBasketKpi`, `getTargetProgress`, `getRevenueMonthly`, `getRevenueByCategory`, `getTargetVsActualByCategory`) + tests intégration. Phase 04bis (RPCs avancés R6, R9-R16) à faire en parallèle des phases widget 07-10 quand les widgets correspondants seront implémentés.
+Prochaine : **Phase 06** — design tokens (palette terracotta + crème oklch dans `globals.css`), restyle login/dashboard shell pour matcher le design handoff, panneau de tweaks (theme/radius). Le code des wrappers Phase 05 sera consommé par les Server Components à partir de Phase 07.
 
 > Design handoff : tous les widgets et tokens sont décrits dans `design_handoff_dashboard_widgets/README.md` — fidélité hifi exigée (D007).
 
