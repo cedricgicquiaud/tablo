@@ -64,9 +64,10 @@ Phases livrées :
 - Phase 02 (data access infrastructure) — PR #2 mergée.
 - Phase 03 (auth login + proxy Next.js 16) — PR #3 mergée.
 - Phase 04 (e-commerce schema + RPCs core R1-R5/R7-R8 + seed faker) — PR #4 mergée.
-- Phase 05 (commerce wrappers TS : 7 fonctions camelCase + Date) — PR à créer.
+- Phase 05 (commerce wrappers TS : 7 fonctions camelCase + Date) — PR #5 mergée.
+- Phase 06 (design tokens terracotta+crème, restyle login/dashboard, tweaks theme+radius) — PR à créer.
 
-Prochaine : **Phase 06** — design tokens (palette terracotta + crème oklch dans `globals.css`), restyle login/dashboard shell pour matcher le design handoff, panneau de tweaks (theme/radius). Le code des wrappers Phase 05 sera consommé par les Server Components à partir de Phase 07.
+Prochaine : **Phase 07** — KPI widgets W01-W04 (KpiEditorial revenu, KpiBars visiteurs 7j, KpiTypo panier moyen, KpiRing objectif mensuel) en consommant les wrappers Phase 05 (`getRevenueKpi`, `getOrdersKpi`, `getBasketKpi`, `getTargetProgress`).
 
 > Design handoff : tous les widgets et tokens sont décrits dans `design_handoff_dashboard_widgets/README.md` — fidélité hifi exigée (D007).
 
