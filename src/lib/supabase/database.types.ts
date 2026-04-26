@@ -34,80 +34,38 @@ export type Database = {
   }
   public: {
     Tables: {
-      events: {
+      calendar_events: {
         Row: {
-          id: number
-          occurred_at: string
-          type: string
-          user_id: string
-        }
-        Insert: {
-          id?: number
-          occurred_at: string
-          type: string
-          user_id: string
-        }
-        Update: {
-          id?: number
-          occurred_at?: string
-          type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "events_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      subscriptions: {
-        Row: {
-          canceled_at: string | null
+          duration_min: number
           id: string
-          mrr_cents: number
-          plan: string
-          started_at: string
-          status: string
-          user_id: string
+          starts_at: string
+          tag: string
+          title: string
         }
         Insert: {
-          canceled_at?: string | null
+          duration_min?: number
           id?: string
-          mrr_cents: number
-          plan: string
-          started_at: string
-          status: string
-          user_id: string
+          starts_at: string
+          tag: string
+          title: string
         }
         Update: {
-          canceled_at?: string | null
+          duration_min?: number
           id?: string
-          mrr_cents?: number
-          plan?: string
-          started_at?: string
-          status?: string
-          user_id?: string
+          starts_at?: string
+          tag?: string
+          title?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "subscriptions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      users: {
+      customers: {
         Row: {
           country: string
           created_at: string
           email: string
           full_name: string
           id: string
+          segment: string
         }
         Insert: {
           country: string
@@ -115,6 +73,7 @@ export type Database = {
           email: string
           full_name: string
           id?: string
+          segment: string
         }
         Update: {
           country?: string
@@ -122,6 +81,205 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          segment?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          customer_id: string | null
+          id: number
+          metadata: Json | null
+          occurred_at: string
+          type: string
+        }
+        Insert: {
+          customer_id?: string | null
+          id?: number
+          metadata?: Json | null
+          occurred_at?: string
+          type: string
+        }
+        Update: {
+          customer_id?: string | null
+          id?: number
+          metadata?: Json | null
+          occurred_at?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          id: number
+          order_id: string
+          product_id: string
+          quantity: number
+          unit_price_cents: number
+        }
+        Insert: {
+          id?: number
+          order_id: string
+          product_id: string
+          quantity: number
+          unit_price_cents: number
+        }
+        Update: {
+          id?: number
+          order_id?: string
+          product_id?: string
+          quantity?: number
+          unit_price_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          channel: string
+          created_at: string
+          customer_id: string
+          id: string
+          paid_at: string | null
+          status: string
+          total_cents: number
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          paid_at?: string | null
+          status: string
+          total_cents: number
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          paid_at?: string | null
+          status?: string
+          total_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          name: string
+          price_cents: number
+          rating: number
+          segment: string
+          sku: string
+          status: string
+          stock: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          name: string
+          price_cents: number
+          rating: number
+          segment: string
+          sku: string
+          status: string
+          stock: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          price_cents?: number
+          rating?: number
+          segment?: string
+          sku?: string
+          status?: string
+          stock?: number
+        }
+        Relationships: []
+      }
+      shipments: {
+        Row: {
+          delivered_at: string | null
+          hub: string
+          id: string
+          order_id: string
+          shipped_at: string
+          status: string
+        }
+        Insert: {
+          delivered_at?: string | null
+          hub: string
+          id?: string
+          order_id: string
+          shipped_at: string
+          status: string
+        }
+        Update: {
+          delivered_at?: string | null
+          hub?: string
+          id?: string
+          order_id?: string
+          shipped_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      targets: {
+        Row: {
+          month: string
+          revenue_cents: number
+        }
+        Insert: {
+          month: string
+          revenue_cents: number
+        }
+        Update: {
+          month?: string
+          revenue_cents?: number
         }
         Relationships: []
       }
@@ -130,52 +288,64 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      kpi_snapshot: {
+      basket_kpi: {
         Args: Record<PropertyKey, never>
         Returns: {
-          mrr_cents: number
-          churn_pct: number
-          active_users: number
-          arpu_cents: number
+          avg_cents: number
+          delta_pct: number
         }[]
       }
-      mrr_monthly: {
+      orders_kpi: {
+        Args: {
+          days?: number
+        }
+        Returns: {
+          count: number
+          delta_pct: number
+          daily_cents: number[]
+        }[]
+      }
+      revenue_by_category: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          category: string
+          revenue_cents: number
+        }[]
+      }
+      revenue_kpi: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          current_cents: number
+          previous_cents: number
+          delta_pct: number
+          sparkline_cents: number[]
+        }[]
+      }
+      revenue_monthly: {
         Args: {
           months?: number
         }
         Returns: {
           month: string
-          mrr_cents: number
+          revenue_cents: number
         }[]
       }
-      plan_distribution: {
+      target_progress: {
         Args: Record<PropertyKey, never>
         Returns: {
-          plan: string
-          users_count: number
+          current_cents: number
+          target_cents: number
+          pct: number
+          online_cents: number
+          store_cents: number
         }[]
       }
-      recent_users: {
-        Args: {
-          limit_n?: number
-        }
+      target_vs_actual_by_category: {
+        Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          email: string
-          full_name: string
-          country: string
-          created_at: string
-          plan: string
-          mrr_cents: number
-        }[]
-      }
-      signups_weekly: {
-        Args: {
-          weeks?: number
-        }
-        Returns: {
-          week_start: string
-          signups_count: number
+          category: string
+          actual_cents: number
+          target_cents: number
         }[]
       }
     }

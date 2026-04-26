@@ -12,8 +12,13 @@ export function createSupabaseAdminClient(): DashboardClient {
 
 export async function truncateDemoTables(admin: DashboardClient): Promise<void> {
   await admin.from("events").delete().gt("id", 0);
-  await admin.from("subscriptions").delete().not("id", "is", null);
-  await admin.from("users").delete().not("id", "is", null);
+  await admin.from("order_items").delete().gt("id", 0);
+  await admin.from("shipments").delete().not("id", "is", null);
+  await admin.from("orders").delete().not("id", "is", null);
+  await admin.from("products").delete().not("id", "is", null);
+  await admin.from("customers").delete().not("id", "is", null);
+  await admin.from("calendar_events").delete().not("id", "is", null);
+  await admin.from("targets").delete().not("month", "is", null);
 }
 
 export async function ensureDemoAuthUser(

@@ -60,14 +60,12 @@ supabase/
 
 **Pivot scope 2026-04-26** : passage SaaS Analytics → E-commerce après réception du design handoff (`design_handoff_dashboard_widgets/`). Voir `.workflow/PRD.md` v2 et D006/D007 dans `.workflow/DECISIONS.md`.
 
-Phases livrées (à conserver) :
-- Phase 03 (auth login + proxy Next.js 16) — domain-agnostique, à rebase + merge sur main avant Phase 04.
+Phases livrées :
+- Phase 02 (data access infrastructure : env/admin/types/SSR-CSR clients) — PR #2 mergée. Wrappers SaaS supprimés en Phase 04.
+- Phase 03 (auth login + proxy Next.js 16) — PR #3 mergée. Domain-agnostique.
+- Phase 04 (e-commerce schema + RPCs core R1-R5/R7-R8 + seed faker) — PR à créer sur `feature/04-ecommerce-schema`.
 
-Phases obsolètes :
-- Phase 01 (SaaS schema, mergée PR #1) → remplacée par Phase 04 (e-commerce schema).
-- Phase 02 (SaaS data access, PR #2) → fermée sans merge, remplacée par Phase 05 (e-commerce wrappers).
-
-Prochaine : **Phase 04** — schéma Postgres e-commerce (products/customers/orders/order_items/shipments/events/targets/calendar_events) + RLS + seed faker + RPCs core (R1-R20). Voir `.workflow/SPEC.md` v2 §1-§2 et `.workflow/phases/04-ecommerce-schema/PLAN.md` (à créer en REFINE).
+Prochaine : **Phase 05** — wrappers TypeScript autour des RPCs e-commerce (`getRevenueKpi`, `getOrdersKpi`, `getBasketKpi`, `getTargetProgress`, `getRevenueMonthly`, `getRevenueByCategory`, `getTargetVsActualByCategory`) + tests intégration. Phase 04bis (RPCs avancés R6, R9-R16) à faire en parallèle des phases widget 07-10 quand les widgets correspondants seront implémentés.
 
 > Design handoff : tous les widgets et tokens sont décrits dans `design_handoff_dashboard_widgets/README.md` — fidélité hifi exigée (D007).
 

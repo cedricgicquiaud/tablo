@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Design handoff bundle: prototype JSX/CSS, not production code.
+    "design_handoff_dashboard_widgets/**",
   ]),
 ]);
 
