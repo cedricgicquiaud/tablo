@@ -1,10 +1,13 @@
-type SupabaseEnv = {
+type PublicEnv = {
   url: string;
   anonKey: string;
-  serviceRoleKey?: string;
 };
 
-export function getSupabaseEnv(): SupabaseEnv {
+type AdminEnv = PublicEnv & {
+  serviceRoleKey: string;
+};
+
+export function getSupabaseEnv(): PublicEnv {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
@@ -12,13 +15,19 @@ export function getSupabaseEnv(): SupabaseEnv {
       "Missing Supabase env vars. Run `supabase start` and copy values from `supabase status` into .env.local",
     );
   }
-  return { url, anonKey, serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY };
+  return { url, anonKey };
 }
 
-export function getSupabaseAdminEnv(): Required<SupabaseEnv> {
-  const env = getSupabaseEnv();
-  if (!env.serviceRoleKey) {
-    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY (server-side only)");
+// Server-only : ne JAMAIS importer depuis un fichier consommé côté client.
+// Le bundler client ne doit pas voir ce nom de variable d'env.
+export function getSupabaseAdminEnv(): AdminEnv {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !anonKey || !serviceRoleKey) {
+    throw new Error(
+      "Missing Supabase admin env vars (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY).",
+    );
   }
-  return env as Required<SupabaseEnv>;
+  return { url, anonKey, serviceRoleKey };
 }

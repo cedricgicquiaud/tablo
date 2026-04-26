@@ -69,9 +69,18 @@ Phases livrées :
 - Phase 07 (KPI widgets W01-W04 + format helpers) — PR #7 mergée.
 - Phase 08 (Charts widgets W05-W08) — PR #8 mergée.
 - Phase 09 (Advanced widgets W09-W12 + RPCs R9-R12) — PR #9 mergée.
-- Phase 10 (List widgets W13-W16 + RPCs R13-R16) — PR à créer. **Le dashboard contient désormais les 16 widgets complets du design handoff.**
+- Phase 10 (List widgets W13-W16 + RPCs R13-R16) — PR #10 mergée. **Le dashboard contient les 16 widgets complets.**
+- Phase 11 (DELIVER : README final + bundle audit + UAT global + Vercel deploy guide) — PR à créer. **Fin du template.**
 
-Prochaine : **Phase 11 — DELIVER** : déploiement Vercel, README final avec captures d'écran, Lighthouse Perf+A11y ≥ 90, vérification grep `service_role` dans le bundle, UAT global. Fin du template e-commerce.
+**Template livré :** 11 phases mergées (PR #1 à #10 + #11 à venir), 16 widgets, 60 tests verts, build & lint propres, bundle client audité (0 fuite service_role).
+
+Prochaines évolutions possibles (backlog secondaire) :
+- Filtres date globaux (7j/30j/12m) qui impactent tous les widgets
+- Tests E2E Playwright (parcours login → dashboard → tri table → toggle theme)
+- Skeleton loaders sur tous les widgets
+- Tweak typo (Inter / IBM / Geist via Google Fonts)
+- Vraie carte (Mapbox / MapLibre) en remplacement de la map abstraite
+- OAuth providers (Google / GitHub)
 
 > Design handoff : tous les widgets et tokens sont décrits dans `design_handoff_dashboard_widgets/README.md` — fidélité hifi exigée (D007).
 
