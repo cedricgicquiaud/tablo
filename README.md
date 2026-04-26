@@ -37,7 +37,9 @@ bun run db:seed
 bun run dev
 ```
 
-Ouvrir [http://localhost:3000](http://localhost:3000).
+Ouvrir [http://localhost:3000](http://localhost:3000) → redirige vers `/login`.
+
+**Credentials demo :** `demo@demo.io` / `demodemo` (créés automatiquement par `bun run db:seed`).
 
 ## Commandes utiles
 

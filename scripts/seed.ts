@@ -8,6 +8,7 @@ import {
 } from "../src/lib/domain/plans";
 import {
   createSupabaseAdminClient,
+  ensureDemoAuthUser,
   truncateDemoTables,
 } from "../src/lib/supabase/admin";
 import type { TablesInsert } from "../src/lib/supabase/database.types";
@@ -110,7 +111,8 @@ async function main(): Promise<void> {
   await truncateDemoTables(admin);
   console.log("Seeding demo data…");
   await seedDemoData(admin);
-  console.log("Done.");
+  await ensureDemoAuthUser(admin);
+  console.log("Done. Demo credentials : demo@demo.io / demodemo");
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

@@ -8,6 +8,7 @@ import {
 import type { Database } from "../../src/lib/supabase/database.types";
 import {
   createSupabaseAdminClient,
+  ensureDemoAuthUser,
   truncateDemoTables,
 } from "../../src/lib/supabase/admin";
 import { getSupabaseEnv } from "../../src/lib/supabase/env";
@@ -35,23 +36,7 @@ export async function authedClient(
 }
 
 export const truncateAll = truncateDemoTables;
-
-export async function ensureDemoUser(
-  admin: DashboardClient,
-  email = "demo@demo.io",
-  password = "demodemo",
-): Promise<string> {
-  const { data: list } = await admin.auth.admin.listUsers();
-  const existing = list.users.find((u) => u.email === email);
-  if (existing) return existing.id;
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
-  if (error) throw error;
-  return data.user.id;
-}
+export const ensureDemoUser = ensureDemoAuthUser;
 
 export async function insertUser(
   admin: DashboardClient,
