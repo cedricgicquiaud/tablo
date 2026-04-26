@@ -67,9 +67,10 @@ Phases livrées :
 - Phase 05 (commerce wrappers TS : 7 fonctions camelCase + Date) — PR #5 mergée.
 - Phase 06 (design tokens terracotta+crème, restyle login/dashboard, tweaks theme+radius) — PR #6 mergée.
 - Phase 07 (KPI widgets W01-W04 + format helpers) — PR #7 mergée.
-- Phase 08 (Charts widgets W05-W08 : LineChart, BarChart, DonutExploded, Gauge) — PR à créer.
+- Phase 08 (Charts widgets W05-W08) — PR #8 mergée.
+- Phase 09 (Advanced widgets W09-W12 + RPCs R9-R12 en PR groupée) — PR à créer.
 
-Prochaine : **Phase 09** — Advanced widgets W09-W12 (Heatmap heure×jour, Funnel conversion, Map expéditions, Ranking pays). Nécessite RPCs R9-R12 de Phase 04bis (`orders_by_hour_dow`, `orders_funnel`, `shipments_by_hub`, `top_countries`) à implémenter en parallèle.
+Prochaine : **Phase 10** — List widgets W13-W16 (Calendar, Activity, Table, Stacked). Nécessite RPCs R13/R14/R15/R16 (`revenue_by_segment_monthly`, `recent_activity`, `products_paginated`, `calendar_upcoming`) en parallèle. Le dashboard contiendra alors les 16 widgets complets.
 
 > Design handoff : tous les widgets et tokens sont décrits dans `design_handoff_dashboard_widgets/README.md` — fidélité hifi exigée (D007).
 

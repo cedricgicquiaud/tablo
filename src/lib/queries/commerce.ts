@@ -42,6 +42,31 @@ export type TargetVsActualPoint = {
   targetCents: number;
 };
 
+export type HourDowCell = {
+  dow: number;
+  hourBucket: number;
+  ordersCount: number;
+};
+
+export type FunnelStep = {
+  step: string;
+  stepOrder: number;
+  count: number;
+};
+
+export type ShipmentHubStats = {
+  hub: string;
+  inTransit: number;
+  delivered: number;
+  total: number;
+};
+
+export type CountryRanking = {
+  country: string;
+  revenueCents: number;
+  deltaPct: number;
+};
+
 export async function getRevenueKpi(client: DashboardClient): Promise<RevenueKpi> {
   const { data, error } = await client.rpc("revenue_kpi").single();
   if (error) throw new Error(error.message);
@@ -118,5 +143,57 @@ export async function getTargetVsActualByCategory(
     category: row.category,
     actualCents: row.actual_cents,
     targetCents: row.target_cents,
+  }));
+}
+
+export async function getOrdersByHourDow(
+  client: DashboardClient,
+  days = 90,
+): Promise<HourDowCell[]> {
+  const { data, error } = await client.rpc("orders_by_hour_dow", { days });
+  if (error) throw new Error(error.message);
+  return data.map((row) => ({
+    dow: row.dow,
+    hourBucket: row.hour_bucket,
+    ordersCount: row.orders_count,
+  }));
+}
+
+export async function getOrdersFunnel(
+  client: DashboardClient,
+  days = 30,
+): Promise<FunnelStep[]> {
+  const { data, error } = await client.rpc("orders_funnel", { days });
+  if (error) throw new Error(error.message);
+  return data.map((row) => ({
+    step: row.step,
+    stepOrder: row.step_order,
+    count: row.count,
+  }));
+}
+
+export async function getShipmentsByHub(
+  client: DashboardClient,
+): Promise<ShipmentHubStats[]> {
+  const { data, error } = await client.rpc("shipments_by_hub");
+  if (error) throw new Error(error.message);
+  return data.map((row) => ({
+    hub: row.hub,
+    inTransit: row.in_transit,
+    delivered: row.delivered,
+    total: row.total,
+  }));
+}
+
+export async function getTopCountries(
+  client: DashboardClient,
+  limit = 5,
+): Promise<CountryRanking[]> {
+  const { data, error } = await client.rpc("top_countries", { limit_n: limit });
+  if (error) throw new Error(error.message);
+  return data.map((row) => ({
+    country: row.country,
+    revenueCents: row.revenue_cents,
+    deltaPct: Number(row.delta_pct),
   }));
 }

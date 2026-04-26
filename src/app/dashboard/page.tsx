@@ -1,39 +1,62 @@
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   getBasketKpi,
+  getOrdersByHourDow,
+  getOrdersFunnel,
   getOrdersKpi,
   getRevenueByCategory,
   getRevenueKpi,
   getRevenueMonthly,
+  getShipmentsByHub,
   getTargetProgress,
   getTargetVsActualByCategory,
+  getTopCountries,
 } from "@/lib/queries/commerce";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/sign-out-button";
 import { TweaksToggle } from "@/components/tweaks-toggle";
 import { BarChartWidget } from "@/components/widgets/bar-chart";
 import { DonutExploded } from "@/components/widgets/donut-exploded";
+import { Funnel } from "@/components/widgets/funnel";
 import { Gauge } from "@/components/widgets/gauge";
+import { Heatmap } from "@/components/widgets/heatmap";
 import { KpiBars } from "@/components/widgets/kpi-bars";
 import { KpiEditorial } from "@/components/widgets/kpi-editorial";
 import { KpiRing } from "@/components/widgets/kpi-ring";
 import { KpiTypo } from "@/components/widgets/kpi-typo";
 import { LineChartWidget } from "@/components/widgets/line-chart";
+import { MapWidget } from "@/components/widgets/map";
+import { Ranking } from "@/components/widgets/ranking";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
   const supabase = await createSupabaseServerClient();
 
-  const [revenue, orders, basket, target, monthly, byCategory, targetVsActual] =
-    await Promise.all([
-      getRevenueKpi(supabase),
-      getOrdersKpi(supabase, 7),
-      getBasketKpi(supabase),
-      getTargetProgress(supabase),
-      getRevenueMonthly(supabase, 12),
-      getRevenueByCategory(supabase),
-      getTargetVsActualByCategory(supabase),
-    ]);
+  const [
+    revenue,
+    orders,
+    basket,
+    target,
+    monthly,
+    byCategory,
+    targetVsActual,
+    hourDow,
+    funnel,
+    hubs,
+    countries,
+  ] = await Promise.all([
+    getRevenueKpi(supabase),
+    getOrdersKpi(supabase, 7),
+    getBasketKpi(supabase),
+    getTargetProgress(supabase),
+    getRevenueMonthly(supabase, 12),
+    getRevenueByCategory(supabase),
+    getTargetVsActualByCategory(supabase),
+    getOrdersByHourDow(supabase, 90),
+    getOrdersFunnel(supabase, 30),
+    getShipmentsByHub(supabase),
+    getTopCountries(supabase, 5),
+  ]);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[1320px] flex-col gap-4 px-7 pt-[70px] pb-10">
@@ -64,16 +87,23 @@ export default async function DashboardPage() {
         <Gauge data={target} />
       </section>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_1.2fr]">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-[1.1fr_1.2fr_1fr]">
         <DonutExploded data={byCategory} />
         <BarChartWidget data={targetVsActual} />
+        <Ranking data={countries} />
+      </section>
+
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Heatmap data={hourDow} />
+        <Funnel data={funnel} />
+        <MapWidget data={hubs} />
       </section>
 
       <section
         className="border border-dashed border-[var(--line-2)] p-10 text-center text-sm text-[var(--ink-3)]"
         style={{ borderRadius: "var(--radius)" }}
       >
-        Widgets W09-W16 (advanced + lists) seront branchés en Phases 09-10.
+        Widgets W13-W16 (Calendar, Activity, Table, Stacked) seront branchés en Phase 10.
       </section>
     </main>
   );

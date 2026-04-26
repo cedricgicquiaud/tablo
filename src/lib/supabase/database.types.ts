@@ -295,6 +295,26 @@ export type Database = {
           delta_pct: number
         }[]
       }
+      orders_by_hour_dow: {
+        Args: {
+          days?: number
+        }
+        Returns: {
+          dow: number
+          hour_bucket: number
+          orders_count: number
+        }[]
+      }
+      orders_funnel: {
+        Args: {
+          days?: number
+        }
+        Returns: {
+          step: string
+          step_order: number
+          count: number
+        }[]
+      }
       orders_kpi: {
         Args: {
           days?: number
@@ -330,6 +350,15 @@ export type Database = {
           revenue_cents: number
         }[]
       }
+      shipments_by_hub: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          hub: string
+          in_transit: number
+          delivered: number
+          total: number
+        }[]
+      }
       target_progress: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -346,6 +375,16 @@ export type Database = {
           category: string
           actual_cents: number
           target_cents: number
+        }[]
+      }
+      top_countries: {
+        Args: {
+          limit_n?: number
+        }
+        Returns: {
+          country: string
+          revenue_cents: number
+          delta_pct: number
         }[]
       }
     }
