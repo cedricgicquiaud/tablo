@@ -1,13 +1,17 @@
 import { fileURLToPath } from "node:url";
 import { faker } from "@faker-js/faker";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
 import {
   PLAN_DISTRIBUTION,
   PRICING_CENTS,
   type PlanCode,
 } from "../src/lib/domain/plans";
-import type { Database, TablesInsert } from "../src/lib/supabase/database.types";
+import {
+  createSupabaseAdminClient,
+  truncateDemoTables,
+} from "../src/lib/supabase/admin";
+import type { TablesInsert } from "../src/lib/supabase/database.types";
+import type { DashboardClient } from "../src/lib/supabase/types";
 
 const TARGET_USERS = 1000;
 const HISTORY_MONTHS = 12;
@@ -16,7 +20,7 @@ const NOW = new Date("2026-04-26T12:00:00Z");
 const CANCELED_RATIO = 0.04;
 const ACTIVE_USER_RATIO = 0.6;
 
-type Admin = SupabaseClient<Database>;
+type Admin = DashboardClient;
 
 function chunked<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -102,19 +106,8 @@ export async function seedDemoData(admin: Admin): Promise<void> {
 
 async function main(): Promise<void> {
   config({ path: ".env.local" });
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceRole) {
-    throw new Error(
-      "Missing env vars : run `supabase start` then copy values to .env.local",
-    );
-  }
-  const admin = createClient<Database>(url, serviceRole, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  await admin.from("events").delete().gt("id", 0);
-  await admin.from("subscriptions").delete().not("id", "is", null);
-  await admin.from("users").delete().not("id", "is", null);
+  const admin = createSupabaseAdminClient();
+  await truncateDemoTables(admin);
   console.log("Seeding demo data…");
   await seedDemoData(admin);
   console.log("Done.");
