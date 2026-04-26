@@ -29,7 +29,11 @@ supabase start
 # 2. Récupérer les valeurs et les coller dans .env.local
 supabase status
 
-# 3. Lancer le dashboard
+# 3. Appliquer migrations + seed riche (~1000 users via faker, déterministe)
+supabase db reset
+bun run db:seed
+
+# 4. Lancer le dashboard
 bun run dev
 ```
 

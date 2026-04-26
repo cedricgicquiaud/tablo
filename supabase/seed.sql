@@ -1,0 +1,3 @@
+-- Seed appliqué automatiquement par `supabase db reset`.
+-- Pour la demo, le seed riche est dans `scripts/seed.ts` (faker, ~1000 users).
+-- Lancer après le reset : `bun run db:seed`

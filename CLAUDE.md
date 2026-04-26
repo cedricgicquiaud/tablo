@@ -58,7 +58,7 @@ supabase/
 
 ## Phase en cours
 
-Phase BOOTSTRAP — initialisation greenfield (voir `.claude/rules/phases/02-bootstrap.md`).
+Phase 01 (data layer) terminée — PR #1 ouverte (https://github.com/AlanZien/dashboard/pull/1). Prochaine : Phase 02 (data access — clients Supabase SSR/CSR + wrappers TypeScript), voir `.workflow/phases/02-data-access/PLAN.md`.
 
 ## Décisions
 
