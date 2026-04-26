@@ -161,6 +161,72 @@
   html[data-theme="dark"] {
     color-scheme: dark;
   }
+  .w {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+    animation: w-fade-up 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .w-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .w-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-2);
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .w-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    background: var(--accent-4);
+    color: var(--accent);
+  }
+  .delta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    padding: 3px 8px;
+    border-radius: 999px;
+  }
+  .delta-chip-pos {
+    color: var(--positive);
+    background: color-mix(in oklab, var(--positive) 14%, transparent);
+  }
+  .delta-chip-neg {
+    color: var(--negative);
+    background: color-mix(in oklab, var(--negative) 14%, transparent);
+  }
+  .muted {
+    color: var(--ink-3);
+    font-size: 12px;
+  }
+  @keyframes w-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
   /* Tabular numerics on every <code> / .num */
   .tabular,
   code,
