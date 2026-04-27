@@ -23,11 +23,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { theme, radius } = await readTweaks();
+  const { mode, palette, radius } = await readTweaks();
   return (
     <html
       lang="fr"
-      data-theme={theme}
+      data-mode={mode}
+      data-palette={palette}
       data-radius={radius}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >

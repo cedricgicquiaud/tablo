@@ -3,12 +3,15 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import {
+  MODE_COOKIE,
+  MODES,
+  PALETTE_COOKIE,
+  PALETTES,
   RADII,
   RADIUS_COOKIE,
-  THEME_COOKIE,
-  THEMES,
+  type Mode,
+  type Palette,
   type Radius,
-  type Theme,
   type Tweaks,
 } from "./tweaks-types";
 
@@ -16,20 +19,34 @@ const ONE_YEAR_S = 60 * 60 * 24 * 365;
 
 export async function readTweaks(): Promise<Tweaks> {
   const store = await cookies();
-  const themeRaw = store.get(THEME_COOKIE)?.value;
+  const modeRaw = store.get(MODE_COOKIE)?.value;
+  const paletteRaw = store.get(PALETTE_COOKIE)?.value;
   const radiusRaw = store.get(RADIUS_COOKIE)?.value;
-  const theme = (THEMES as readonly string[]).includes(themeRaw ?? "")
-    ? (themeRaw as Theme)
+  const mode = (MODES as readonly string[]).includes(modeRaw ?? "")
+    ? (modeRaw as Mode)
     : "light";
+  const palette = (PALETTES as readonly string[]).includes(paletteRaw ?? "")
+    ? (paletteRaw as Palette)
+    : "terracotta";
   const radius = (RADII as readonly string[]).includes(radiusRaw ?? "")
     ? (radiusRaw as Radius)
     : "soft";
-  return { theme, radius };
+  return { mode, palette, radius };
 }
 
-export async function setTheme(theme: Theme): Promise<void> {
+export async function setMode(mode: Mode): Promise<void> {
   const store = await cookies();
-  store.set(THEME_COOKIE, theme, {
+  store.set(MODE_COOKIE, mode, {
+    path: "/",
+    maxAge: ONE_YEAR_S,
+    sameSite: "lax",
+  });
+  revalidatePath("/", "layout");
+}
+
+export async function setPalette(palette: Palette): Promise<void> {
+  const store = await cookies();
+  store.set(PALETTE_COOKIE, palette, {
     path: "/",
     maxAge: ONE_YEAR_S,
     sameSite: "lax",
@@ -47,7 +64,7 @@ export async function setRadius(radius: Radius): Promise<void> {
   revalidatePath("/", "layout");
 }
 
-export async function toggleTheme(): Promise<void> {
-  const { theme } = await readTweaks();
-  await setTheme(theme === "light" ? "dark" : "light");
+export async function toggleMode(): Promise<void> {
+  const { mode } = await readTweaks();
+  await setMode(mode === "light" ? "dark" : "light");
 }

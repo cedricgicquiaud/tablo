@@ -2,17 +2,17 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
 /*
-  Design tokens — terracotta + crème (oklch).
-  Source de vérité : design_handoff_dashboard_widgets/styles.css
-  Light = base (no [data-theme]) ; dark = [data-theme="dark"] sur <html>.
-  La radius est paramétrable via [data-radius="sharp"|"soft"|"pill"] sur <html>.
+  Design tokens — 5 palettes × 2 modes (light/dark).
+  Source de vérité : design_handoff_dashboard_widgets/styles.css (mise à jour bundle remote 2026-04-27).
+  Sélection via [data-palette="X"] + [data-mode="Y"] sur <html>.
+  Défaut : terracotta + light (les valeurs :root servent de fallback SSR avant que le cookie soit lu).
+  Radius variant via [data-radius="sharp|soft|pill"] sur <html>.
  */
 
 @theme inline {
-  /* shadcn mapping → design tokens */
   --color-background: var(--bg);
   --color-foreground: var(--ink);
   --color-card: var(--surface);
@@ -20,7 +20,7 @@
   --color-popover: var(--surface);
   --color-popover-foreground: var(--ink);
   --color-primary: var(--accent);
-  --color-primary-foreground: oklch(0.99 0.001 106.4231);
+  --color-primary-foreground: var(--bg);
   --color-secondary: var(--surface-2);
   --color-secondary-foreground: var(--ink-2);
   --color-muted: var(--surface-2);
@@ -41,7 +41,7 @@
   --color-sidebar: var(--surface-2);
   --color-sidebar-foreground: var(--ink-2);
   --color-sidebar-primary: var(--accent);
-  --color-sidebar-primary-foreground: oklch(0.99 0.001 106.4231);
+  --color-sidebar-primary-foreground: var(--bg);
   --color-sidebar-accent: var(--surface-3);
   --color-sidebar-accent-foreground: var(--ink);
   --color-sidebar-border: var(--line);
@@ -58,36 +58,8 @@
   --radius-2xl: calc(var(--radius) * 1.8);
 }
 
+/* === Shared structural tokens (palette-agnostic) === */
 :root {
-  /* Light theme — fond crème, primary terracotta chaud */
-  --bg: oklch(0.9938 0.0013 106.4231);
-  --surface: oklch(0.9938 0.0013 106.4231);
-  --surface-2: oklch(0.9425 0.0068 97.355);
-  --surface-3: oklch(0.9334 0.0068 97.3561);
-
-  --ink: oklch(0.2174 0.0019 106.5582);
-  --ink-2: oklch(0.3361 0.0139 95.4669);
-  --ink-3: oklch(0.6124 0.0044 106.5301);
-  --ink-4: oklch(0.7661 0.0071 97.3826);
-
-  --line: oklch(0.8947 0.0029 84.5598);
-  --line-2: oklch(0.8347 0.0029 84.5598);
-
-  --accent: oklch(0.6169 0.0689 38.1469);
-  --accent-2: oklch(0.5513 0.0682 43.8987);
-  --accent-3: oklch(0.72 0.07 38);
-  --accent-4: oklch(0.9 0.03 38);
-
-  --c1: oklch(0.5513 0.0682 43.8987);
-  --c2: oklch(0.7553 0.0759 293.144);
-  --c3: oklch(0.8821 0.0126 91.53);
-  --c4: oklch(0.9126 0.0165 297.5043);
-  --c5: oklch(0.5516 0.0719 42.5982);
-
-  --positive: oklch(0.6 0.15 142);
-  --negative: oklch(0.58 0.22 25);
-  --warn: oklch(0.7 0.17 80);
-
   --radius: 15px;
   --radius-tag-sm: 11px;
   --radius-tag-lg: 19px;
@@ -96,42 +68,165 @@
   --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
   --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
 
+  --positive: oklch(0.6 0.15 142);
+  --negative: oklch(0.58 0.22 25);
+  --warn: oklch(0.7 0.17 80);
+
   --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-display: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono-stack: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+
+  /* Default = terracotta + light (fallback si pas de data-palette/data-mode). */
+  --bg: oklch(0.9938 0.0013 106);
+  --surface: oklch(0.9938 0.0013 106);
+  --surface-2: oklch(0.9425 0.0068 97);
+  --surface-3: oklch(0.9334 0.0068 97);
+  --ink: oklch(0.2174 0.0019 106);
+  --ink-2: oklch(0.3361 0.0139 95);
+  --ink-3: oklch(0.6124 0.0044 106);
+  --ink-4: oklch(0.7661 0.0071 97);
+  --line: oklch(0.8947 0.0029 84);
+  --line-2: oklch(0.8347 0.0029 84);
+  --accent: oklch(0.6169 0.0689 38);
+  --accent-2: oklch(0.5513 0.0682 43);
+  --accent-3: oklch(0.7200 0.0700 38);
+  --accent-4: oklch(0.9000 0.0300 38);
+  --c1: oklch(0.5513 0.0682 43);
+  --c2: oklch(0.7553 0.0759 293);
+  --c3: oklch(0.8821 0.0126 91);
+  --c4: oklch(0.9126 0.0165 297);
+  --c5: oklch(0.5516 0.0719 42);
 }
 
-[data-theme="dark"] {
-  --bg: oklch(0.2389 0.0019 106.5407);
-  --surface: oklch(0.2682 0.0018 106.5218);
-  --surface-2: oklch(0.3088 0.0018 106.5021);
-  --surface-3: oklch(0.3628 0.0051 106.6491);
-
-  --ink: oklch(0.9938 0.0013 106.4231);
-  --ink-2: oklch(0.8134 0.007 97.3739);
-  --ink-3: oklch(0.65 0.007 97.3739);
-  --ink-4: oklch(0.4346 0.0066 95.2075);
-
-  --line: oklch(0.3628 0.0051 106.6491);
-  --line-2: oklch(0.4346 0.0066 95.2075);
-
-  --accent: oklch(0.6789 0.0635 39.2202);
-  --accent-2: oklch(0.6169 0.0689 38.1469);
-  --accent-3: oklch(0.55 0.07 38);
-  --accent-4: oklch(0.35 0.05 38);
-
-  --c1: oklch(0.6789 0.0635 39.2202);
-  --c3: oklch(0.5 0.04 91);
-  --c4: oklch(0.45 0.026 290);
-
+/* Dark mode shadows + sémantiques (toutes palettes) */
+[data-mode="dark"] {
   --positive: oklch(0.72 0.17 142);
   --negative: oklch(0.7 0.2 25);
   --warn: oklch(0.78 0.15 80);
-
   --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.2);
   --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.25);
   --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.3), 0 4px 6px -1px hsl(0 0% 0% / 0.3);
+}
+
+/* ─── 1. TERRACOTTA — crème chaud + terracotta (default) ─── */
+[data-palette="terracotta"][data-mode="light"] {
+  --bg: oklch(0.9938 0.0013 106); --surface: oklch(0.9938 0.0013 106);
+  --surface-2: oklch(0.9425 0.0068 97); --surface-3: oklch(0.9334 0.0068 97);
+  --ink: oklch(0.2174 0.0019 106); --ink-2: oklch(0.3361 0.0139 95);
+  --ink-3: oklch(0.6124 0.0044 106); --ink-4: oklch(0.7661 0.0071 97);
+  --line: oklch(0.8947 0.0029 84); --line-2: oklch(0.8347 0.0029 84);
+  --accent: oklch(0.6169 0.0689 38); --accent-2: oklch(0.5513 0.0682 43);
+  --accent-3: oklch(0.7200 0.0700 38); --accent-4: oklch(0.9000 0.0300 38);
+  --c1: oklch(0.5513 0.0682 43); --c2: oklch(0.7553 0.0759 293);
+  --c3: oklch(0.8821 0.0126 91); --c4: oklch(0.9126 0.0165 297); --c5: oklch(0.5516 0.0719 42);
+}
+[data-palette="terracotta"][data-mode="dark"] {
+  --bg: oklch(0.2389 0.0019 106); --surface: oklch(0.2682 0.0018 106);
+  --surface-2: oklch(0.3088 0.0018 106); --surface-3: oklch(0.3628 0.0051 106);
+  --ink: oklch(0.9938 0.0013 106); --ink-2: oklch(0.8134 0.0070 97);
+  --ink-3: oklch(0.6500 0.0070 97); --ink-4: oklch(0.4346 0.0066 95);
+  --line: oklch(0.3628 0.0051 106); --line-2: oklch(0.4346 0.0066 95);
+  --accent: oklch(0.6789 0.0635 39); --accent-2: oklch(0.6169 0.0689 38);
+  --accent-3: oklch(0.5500 0.0700 38); --accent-4: oklch(0.3500 0.0500 38);
+  --c1: oklch(0.6789 0.0635 39); --c2: oklch(0.7553 0.0759 293);
+  --c3: oklch(0.5000 0.0400 91); --c4: oklch(0.4500 0.0260 290); --c5: oklch(0.5516 0.0719 42);
+}
+
+/* ─── 2. EDITORIAL — papier blanc, encre pure, rouge brique ─── */
+[data-palette="editorial"][data-mode="light"] {
+  --bg: oklch(0.99 0 0); --surface: oklch(1 0 0);
+  --surface-2: oklch(0.965 0 0); --surface-3: oklch(0.945 0 0);
+  --ink: oklch(0.15 0 0); --ink-2: oklch(0.30 0 0);
+  --ink-3: oklch(0.55 0 0); --ink-4: oklch(0.75 0 0);
+  --line: oklch(0.88 0 0); --line-2: oklch(0.78 0 0);
+  --accent: oklch(0.50 0.18 27); --accent-2: oklch(0.42 0.18 27);
+  --accent-3: oklch(0.62 0.16 27); --accent-4: oklch(0.93 0.04 27);
+  --c1: oklch(0.50 0.18 27); --c2: oklch(0.30 0 0);
+  --c3: oklch(0.75 0.10 75); --c4: oklch(0.65 0 0); --c5: oklch(0.42 0.18 27);
+}
+[data-palette="editorial"][data-mode="dark"] {
+  --bg: oklch(0.13 0 0); --surface: oklch(0.17 0 0);
+  --surface-2: oklch(0.21 0 0); --surface-3: oklch(0.26 0 0);
+  --ink: oklch(0.98 0 0); --ink-2: oklch(0.82 0 0);
+  --ink-3: oklch(0.62 0 0); --ink-4: oklch(0.45 0 0);
+  --line: oklch(0.27 0 0); --line-2: oklch(0.35 0 0);
+  --accent: oklch(0.68 0.18 27); --accent-2: oklch(0.58 0.20 27);
+  --accent-3: oklch(0.50 0.18 27); --accent-4: oklch(0.30 0.10 27);
+  --c1: oklch(0.68 0.18 27); --c2: oklch(0.85 0 0);
+  --c3: oklch(0.72 0.13 75); --c4: oklch(0.45 0 0); --c5: oklch(0.58 0.20 27);
+}
+
+/* ─── 3. FOREST — vert profond + sable, bronze accent ─── */
+[data-palette="forest"][data-mode="light"] {
+  --bg: oklch(0.97 0.012 110); --surface: oklch(0.985 0.008 110);
+  --surface-2: oklch(0.94 0.018 115); --surface-3: oklch(0.92 0.022 115);
+  --ink: oklch(0.22 0.04 145); --ink-2: oklch(0.35 0.04 145);
+  --ink-3: oklch(0.55 0.025 130); --ink-4: oklch(0.72 0.02 120);
+  --line: oklch(0.87 0.018 120); --line-2: oklch(0.78 0.025 130);
+  --accent: oklch(0.45 0.10 155); --accent-2: oklch(0.36 0.10 155);
+  --accent-3: oklch(0.58 0.10 155); --accent-4: oklch(0.90 0.04 155);
+  --c1: oklch(0.45 0.10 155); --c2: oklch(0.62 0.12 75);
+  --c3: oklch(0.80 0.06 110); --c4: oklch(0.55 0.06 200); --c5: oklch(0.36 0.10 155);
+}
+[data-palette="forest"][data-mode="dark"] {
+  --bg: oklch(0.20 0.025 155); --surface: oklch(0.24 0.028 155);
+  --surface-2: oklch(0.28 0.030 155); --surface-3: oklch(0.33 0.032 155);
+  --ink: oklch(0.96 0.012 110); --ink-2: oklch(0.82 0.020 115);
+  --ink-3: oklch(0.63 0.022 120); --ink-4: oklch(0.45 0.025 130);
+  --line: oklch(0.33 0.032 155); --line-2: oklch(0.42 0.030 150);
+  --accent: oklch(0.72 0.13 90); --accent-2: oklch(0.62 0.13 85);
+  --accent-3: oklch(0.55 0.12 90); --accent-4: oklch(0.35 0.08 90);
+  --c1: oklch(0.72 0.13 90); --c2: oklch(0.65 0.10 155);
+  --c3: oklch(0.50 0.08 110); --c4: oklch(0.55 0.08 200); --c5: oklch(0.62 0.13 85);
+}
+
+/* ─── 4. MIDNIGHT — bleu nuit + cyan électrique ─── */
+[data-palette="midnight"][data-mode="light"] {
+  --bg: oklch(0.97 0.008 240); --surface: oklch(0.99 0.005 240);
+  --surface-2: oklch(0.94 0.012 240); --surface-3: oklch(0.92 0.014 240);
+  --ink: oklch(0.20 0.04 250); --ink-2: oklch(0.34 0.04 250);
+  --ink-3: oklch(0.56 0.02 240); --ink-4: oklch(0.74 0.015 240);
+  --line: oklch(0.88 0.012 240); --line-2: oklch(0.80 0.018 240);
+  --accent: oklch(0.55 0.16 250); --accent-2: oklch(0.45 0.18 252);
+  --accent-3: oklch(0.66 0.14 248); --accent-4: oklch(0.92 0.05 245);
+  --c1: oklch(0.55 0.16 250); --c2: oklch(0.65 0.14 195);
+  --c3: oklch(0.78 0.10 245); --c4: oklch(0.60 0.13 320); --c5: oklch(0.45 0.18 252);
+}
+[data-palette="midnight"][data-mode="dark"] {
+  --bg: oklch(0.16 0.025 255); --surface: oklch(0.20 0.028 255);
+  --surface-2: oklch(0.24 0.030 255); --surface-3: oklch(0.29 0.032 255);
+  --ink: oklch(0.97 0.008 240); --ink-2: oklch(0.82 0.020 240);
+  --ink-3: oklch(0.62 0.025 240); --ink-4: oklch(0.45 0.030 250);
+  --line: oklch(0.29 0.032 255); --line-2: oklch(0.38 0.035 250);
+  --accent: oklch(0.78 0.16 200); --accent-2: oklch(0.68 0.17 200);
+  --accent-3: oklch(0.58 0.16 200); --accent-4: oklch(0.32 0.10 220);
+  --c1: oklch(0.78 0.16 200); --c2: oklch(0.70 0.16 280);
+  --c3: oklch(0.55 0.12 255); --c4: oklch(0.65 0.16 320); --c5: oklch(0.68 0.17 200);
+}
+
+/* ─── 5. MONO — gris neutre + magenta unique (Linear/Vercel) ─── */
+[data-palette="mono"][data-mode="light"] {
+  --bg: oklch(0.985 0 0); --surface: oklch(1 0 0);
+  --surface-2: oklch(0.96 0 0); --surface-3: oklch(0.94 0 0);
+  --ink: oklch(0.18 0 0); --ink-2: oklch(0.32 0 0);
+  --ink-3: oklch(0.55 0 0); --ink-4: oklch(0.74 0 0);
+  --line: oklch(0.90 0 0); --line-2: oklch(0.82 0 0);
+  --accent: oklch(0.58 0.22 340); --accent-2: oklch(0.48 0.24 340);
+  --accent-3: oklch(0.68 0.20 340); --accent-4: oklch(0.94 0.05 340);
+  --c1: oklch(0.58 0.22 340); --c2: oklch(0.40 0 0);
+  --c3: oklch(0.78 0 0); --c4: oklch(0.60 0 0); --c5: oklch(0.48 0.24 340);
+}
+[data-palette="mono"][data-mode="dark"] {
+  --bg: oklch(0.14 0 0); --surface: oklch(0.18 0 0);
+  --surface-2: oklch(0.22 0 0); --surface-3: oklch(0.27 0 0);
+  --ink: oklch(0.98 0 0); --ink-2: oklch(0.82 0 0);
+  --ink-3: oklch(0.62 0 0); --ink-4: oklch(0.45 0 0);
+  --line: oklch(0.28 0 0); --line-2: oklch(0.36 0 0);
+  --accent: oklch(0.72 0.22 340); --accent-2: oklch(0.62 0.24 340);
+  --accent-3: oklch(0.55 0.22 340); --accent-4: oklch(0.32 0.12 340);
+  --c1: oklch(0.72 0.22 340); --c2: oklch(0.85 0 0);
+  --c3: oklch(0.45 0 0); --c4: oklch(0.60 0 0); --c5: oklch(0.62 0.24 340);
 }
 
 [data-radius="sharp"] {
@@ -158,8 +253,47 @@
     @apply font-sans;
     color-scheme: light;
   }
-  html[data-theme="dark"] {
+  html[data-mode="dark"] {
     color-scheme: dark;
+  }
+  .tabular,
+  code,
+  .num-xl,
+  .num-l,
+  .num-m {
+    font-variant-numeric: tabular-nums;
+  }
+  .num-xl {
+    font-size: 40px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .num-l {
+    font-size: 30px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .num-m {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .label-xs {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+  }
+  .delta-pos {
+    color: var(--positive);
+    background: color-mix(in oklab, var(--positive) 15%, transparent);
+  }
+  .delta-neg {
+    color: var(--negative);
+    background: color-mix(in oklab, var(--negative) 15%, transparent);
   }
   .w {
     background: var(--surface);
@@ -226,45 +360,5 @@
       opacity: 1;
       transform: translateY(0);
     }
-  }
-  /* Tabular numerics on every <code> / .num */
-  .tabular,
-  code,
-  .num-xl,
-  .num-l,
-  .num-m {
-    font-variant-numeric: tabular-nums;
-  }
-  .num-xl {
-    font-size: 40px;
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    line-height: 1;
-  }
-  .num-l {
-    font-size: 30px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1;
-  }
-  .num-m {
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1;
-  }
-  .label-xs {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--ink-3);
-  }
-  .delta-pos {
-    color: var(--positive);
-    background: color-mix(in oklab, var(--positive) 15%, transparent);
-  }
-  .delta-neg {
-    color: var(--negative);
-    background: color-mix(in oklab, var(--negative) 15%, transparent);
   }
 }

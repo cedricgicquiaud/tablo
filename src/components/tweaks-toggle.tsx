@@ -1,24 +1,57 @@
-import { readTweaks, setRadius, setTheme } from "@/lib/ui/tweaks";
-import { RADII, THEMES } from "@/lib/ui/tweaks-types";
+import { readTweaks, setMode, setPalette, setRadius } from "@/lib/ui/tweaks";
+import {
+  PALETTE_LABELS,
+  PALETTES,
+  RADII,
+  type Palette,
+  type Radius,
+} from "@/lib/ui/tweaks-types";
 
 export async function TweaksToggle() {
-  const { theme, radius } = await readTweaks();
+  const { mode, palette, radius } = await readTweaks();
   return (
-    <div className="flex items-center gap-2">
-      <form action={async () => {
-        "use server";
-        await setTheme(theme === "light" ? "dark" : "light");
-      }}>
+    <div className="flex flex-wrap items-center gap-2">
+      <form
+        action={async () => {
+          "use server";
+          await setMode(mode === "light" ? "dark" : "light");
+        }}
+      >
         <button
           type="submit"
           className="rounded-[var(--radius-tag-sm)] border border-[var(--line)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-[var(--ink-2)] hover:bg-[var(--surface-3)]"
-          aria-label="Toggle theme"
+          aria-label="Toggle mode"
         >
-          {theme === "light" ? "🌙 Dark" : "☀ Light"}
+          {mode === "light" ? "🌙 Dark" : "☀ Light"}
         </button>
       </form>
+
       <div className="flex overflow-hidden rounded-[var(--radius-tag-sm)] border border-[var(--line)]">
-        {RADII.map((r) => (
+        {PALETTES.map((p: Palette) => (
+          <form
+            key={p}
+            action={async () => {
+              "use server";
+              await setPalette(p);
+            }}
+          >
+            <button
+              type="submit"
+              aria-pressed={palette === p}
+              className={`px-2.5 py-1.5 text-[11px] transition-colors ${
+                palette === p
+                  ? "bg-[var(--accent)] text-[var(--bg)]"
+                  : "bg-[var(--surface-2)] text-[var(--ink-3)] hover:bg-[var(--surface-3)]"
+              }`}
+            >
+              {PALETTE_LABELS[p]}
+            </button>
+          </form>
+        ))}
+      </div>
+
+      <div className="flex overflow-hidden rounded-[var(--radius-tag-sm)] border border-[var(--line)]">
+        {RADII.map((r: Radius) => (
           <form
             key={r}
             action={async () => {
@@ -31,7 +64,7 @@ export async function TweaksToggle() {
               aria-pressed={radius === r}
               className={`px-3 py-1.5 text-xs transition-colors ${
                 radius === r
-                  ? "bg-[var(--accent)] text-[oklch(0.99_0.001_106.4231)]"
+                  ? "bg-[var(--accent)] text-[var(--bg)]"
                   : "bg-[var(--surface-2)] text-[var(--ink-3)] hover:bg-[var(--surface-3)]"
               }`}
             >
@@ -40,9 +73,6 @@ export async function TweaksToggle() {
           </form>
         ))}
       </div>
-      <span className="sr-only" aria-live="polite">
-        Theme {theme}, radius {radius}, available themes {THEMES.join(", ")}
-      </span>
     </div>
   );
 }

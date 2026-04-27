@@ -40,7 +40,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="mt-2 rounded-[var(--radius-tag-sm)] bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[oklch(0.99_0.001_106.4231)] transition-colors hover:bg-[var(--accent-2)] disabled:opacity-50"
+        className="mt-2 rounded-[var(--radius-tag-sm)] bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-[var(--bg)] transition-colors hover:bg-[var(--accent-2)] disabled:opacity-50"
       >
         {isPending ? "Signing in…" : "Sign in"}
       </button>
