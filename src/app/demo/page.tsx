@@ -1,4 +1,5 @@
-import { getCurrentUser } from "@/lib/auth/current-user";
+import Link from "next/link";
+import { ROUTES } from "@/lib/auth/routes";
 import {
   getBasketKpi,
   getCalendarUpcoming,
@@ -16,8 +17,7 @@ import {
   getTargetVsActualByCategory,
   getTopCountries,
 } from "@/lib/queries/commerce";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { SignOutButton } from "@/components/sign-out-button";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { TweaksToggle } from "@/components/tweaks-toggle";
 import { Activity } from "@/components/widgets/activity";
 import { BarChartWidget } from "@/components/widgets/bar-chart";
@@ -36,9 +36,10 @@ import { ProductsTable } from "@/components/widgets/products-table";
 import { Ranking } from "@/components/widgets/ranking";
 import { Stacked } from "@/components/widgets/stacked";
 
-export default async function DashboardPage() {
-  const user = await getCurrentUser();
-  const supabase = await createSupabaseServerClient();
+// /demo : showroom public e-commerce. Aucune auth requise.
+// Bypass RLS via service-role admin client → dataset seedé visible par tous.
+export default async function DemoPage() {
+  const supabase = createSupabaseAdminClient();
 
   const [
     revenue,
@@ -78,16 +79,28 @@ export default async function DashboardPage() {
     <main className="mx-auto flex min-h-screen w-full max-w-[1320px] flex-col gap-4 px-7 pt-[70px] pb-10">
       <header className="mb-2 flex items-center justify-between gap-4">
         <div>
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface-2)] px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-[var(--ink-2)]">
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: "var(--accent)" }}
+            />
+            Démo publique
+          </div>
           <h1 className="text-2xl font-semibold tracking-tight text-[var(--ink)]">
-            Bonjour {user?.email?.split("@")[0]} 👋
+            Showroom Pinpoint — E-commerce
           </h1>
           <p className="text-sm text-[var(--ink-3)]">
-            Voici votre tableau de bord e-commerce.
+            Aperçu des 16 widgets sur un dataset fictif (~3000 produits, 10k commandes).
           </p>
         </div>
         <div className="flex items-center gap-3">
           <TweaksToggle />
-          <SignOutButton />
+          <Link
+            href={ROUTES.SIGNUP}
+            className="rounded-[var(--radius-tag-sm)] bg-[var(--accent)] px-4 py-2 text-sm font-medium text-[var(--bg)] hover:bg-[var(--accent-2)]"
+          >
+            Créer mon compte
+          </Link>
         </div>
       </header>
 

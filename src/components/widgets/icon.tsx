@@ -1,4 +1,4 @@
-type IconName = "revenue" | "users" | "cart" | "trend" | "more";
+type IconName = "revenue" | "users" | "cart" | "trend" | "more" | "pin" | "check" | "close";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   revenue: (
@@ -30,6 +30,21 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <circle cx="5" cy="10" r="1" />
       <circle cx="10" cy="10" r="1" />
       <circle cx="15" cy="10" r="1" />
+    </>
+  ),
+  pin: (
+    <>
+      <path d="M13 3l4 4 M14 4l-5 5-3-1-3 3 7 7 3-3-1-3 5-5" />
+    </>
+  ),
+  check: (
+    <>
+      <path d="M4 10l4 4 8-8" />
+    </>
+  ),
+  close: (
+    <>
+      <path d="M5 5l10 10 M15 5L5 15" />
     </>
   ),
 };

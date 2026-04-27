@@ -34,6 +34,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_threads: {
+        Row: {
+          cost_cents: number
+          dashboard_id: string
+          id: string
+          messages_jsonb: Json
+          total_tokens: number
+          updated_at: string
+        }
+        Insert: {
+          cost_cents?: number
+          dashboard_id: string
+          id?: string
+          messages_jsonb?: Json
+          total_tokens?: number
+          updated_at?: string
+        }
+        Update: {
+          cost_cents?: number
+          dashboard_id?: string
+          id?: string
+          messages_jsonb?: Json
+          total_tokens?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_threads_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           duration_min: number
@@ -57,6 +92,47 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      connections: {
+        Row: {
+          config_jsonb: Json
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          schema_cache_jsonb: Json | null
+          schema_synced_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          config_jsonb: Json
+          created_at?: string
+          id?: string
+          kind: string
+          name: string
+          schema_cache_jsonb?: Json | null
+          schema_synced_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          config_jsonb?: Json
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          schema_cache_jsonb?: Json | null
+          schema_synced_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connections_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customers: {
         Row: {
@@ -84,6 +160,50 @@ export type Database = {
           segment?: string
         }
         Relationships: []
+      }
+      dashboards: {
+        Row: {
+          created_at: string
+          custom_accent: string | null
+          id: string
+          layout_jsonb: Json
+          mode: string
+          name: string
+          palette: string
+          radius: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_accent?: string | null
+          id?: string
+          layout_jsonb?: Json
+          mode?: string
+          name: string
+          palette?: string
+          radius?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_accent?: string | null
+          id?: string
+          layout_jsonb?: Json
+          mode?: string
+          name?: string
+          palette?: string
+          radius?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboards_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       events: {
         Row: {
@@ -283,6 +403,75 @@ export type Database = {
         }
         Relationships: []
       }
+      widgets: {
+        Row: {
+          config_jsonb: Json
+          connection_id: string | null
+          created_at: string
+          dashboard_id: string
+          id: string
+          kind: string
+          position_jsonb: Json
+        }
+        Insert: {
+          config_jsonb: Json
+          connection_id?: string | null
+          created_at?: string
+          dashboard_id: string
+          id?: string
+          kind: string
+          position_jsonb?: Json
+        }
+        Update: {
+          config_jsonb?: Json
+          connection_id?: string | null
+          created_at?: string
+          dashboard_id?: string
+          id?: string
+          kind?: string
+          position_jsonb?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "widgets_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "widgets_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_user_id: string
+          plan: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_user_id: string
+          plan?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_user_id?: string
+          plan?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -396,6 +585,12 @@ export type Database = {
           month: string
           revenue_cents: number
         }[]
+      }
+      run_readonly_query: {
+        Args: {
+          query_sql: string
+        }
+        Returns: Json
       }
       shipments_by_hub: {
         Args: Record<PropertyKey, never>

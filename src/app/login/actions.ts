@@ -21,7 +21,7 @@ export async function signIn(
   if (error) {
     return { error: "Invalid credentials." };
   }
-  redirect(ROUTES.DASHBOARD);
+  redirect(ROUTES.APP);
 }
 
 export async function signOut(): Promise<void> {

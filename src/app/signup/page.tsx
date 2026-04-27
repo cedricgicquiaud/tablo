@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { ROUTES } from "@/lib/auth/routes";
-import { LoginForm } from "./login-form";
+import { SignUpForm } from "./signup-form";
 
-export default function LoginPage() {
+export default function SignUpPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--bg)] px-4">
       <div
@@ -14,20 +14,20 @@ export default function LoginPage() {
       >
         <div className="space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-[var(--ink)]">
-            Pinpoint
+            Créer un compte
           </h1>
           <p className="text-sm text-[var(--ink-3)]">
-            Connecte-toi pour accéder à tes dashboards.
+            Construis ton premier dashboard en quelques minutes.
           </p>
         </div>
-        <LoginForm />
+        <SignUpForm />
         <p className="text-center text-sm text-[var(--ink-3)]">
-          Pas encore de compte ?{" "}
+          Déjà inscrit ?{" "}
           <Link
-            href={ROUTES.SIGNUP}
+            href={ROUTES.LOGIN}
             className="text-[var(--accent)] hover:underline"
           >
-            S&apos;inscrire
+            Se connecter
           </Link>
         </p>
       </div>
