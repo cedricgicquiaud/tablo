@@ -1,4 +1,5 @@
 import type { DashboardClient } from "@/lib/supabase/types";
+import type { ConnectionKind } from "@/lib/connectors/types";
 
 export type Workspace = {
   id: string;
@@ -6,6 +7,36 @@ export type Workspace = {
   plan: string;
   createdAt: Date;
 };
+
+export type ConnectionSummary = {
+  id: string;
+  workspaceId: string;
+  name: string;
+  kind: ConnectionKind;
+  status: "active" | "expired";
+};
+
+export async function listWorkspaceConnections(
+  client: DashboardClient,
+  workspaceId: string,
+): Promise<ConnectionSummary[]> {
+  const { data, error } = await client
+    .from("connections")
+    .select("id, workspace_id, name, kind, config_jsonb")
+    .eq("workspace_id", workspaceId)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    workspaceId: row.workspace_id,
+    name: row.name,
+    kind: row.kind as ConnectionKind,
+    status:
+      ((row.config_jsonb as { status?: string } | null)?.status === "expired"
+        ? "expired"
+        : "active") as "active" | "expired",
+  }));
+}
 
 export type DashboardSummary = {
   id: string;

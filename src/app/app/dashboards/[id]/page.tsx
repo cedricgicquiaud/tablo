@@ -1,5 +1,9 @@
 import { notFound } from "next/navigation";
-import { getDashboard, getMyWorkspace } from "@/lib/queries/pinpoint";
+import {
+  getDashboard,
+  getMyWorkspace,
+  listWorkspaceConnections,
+} from "@/lib/queries/pinpoint";
 import { listPinnedWidgets } from "@/lib/queries/pinned-widgets";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ChatPanel } from "@/components/pinpoint/chat-panel";
@@ -17,8 +21,11 @@ export default async function DashboardViewPage({
   const supabase = await createSupabaseServerClient();
   const dashboard = await getDashboard(supabase, id);
   if (!dashboard) notFound();
-  const workspace = await getMyWorkspace(supabase);
-  const pinned = await listPinnedWidgets(supabase, id);
+  const [workspace, pinned, connections] = await Promise.all([
+    getMyWorkspace(supabase),
+    listPinnedWidgets(supabase, id),
+    listWorkspaceConnections(supabase, dashboard.workspaceId),
+  ]);
 
   // Date courte (e.g. "Apr 30, 2026") en français
   const today = new Date().toLocaleDateString("fr-FR", {
@@ -54,7 +61,7 @@ export default async function DashboardViewPage({
         </>
       )}
 
-      <ChatPanel dashboardId={id} />
+      <ChatPanel dashboardId={id} connections={connections} />
     </main>
   );
 }

@@ -2,16 +2,26 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { signOut } from "@/app/login/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getMyWorkspace, listDashboards } from "@/lib/queries/pinpoint";
+import {
+  getMyWorkspace,
+  listDashboards,
+  listWorkspaceConnections,
+} from "@/lib/queries/pinpoint";
 import { TabloWordmark } from "@/components/tablo-wordmark";
 import { NewDashboardForm } from "@/app/app/new-dashboard-form";
 import { DashboardLinks } from "./dashboard-links";
+import { ConnectionsList } from "./connections-list";
 
 export async function Sidebar() {
   const user = await getCurrentUser();
   const supabase = await createSupabaseServerClient();
   const workspace = await getMyWorkspace(supabase);
-  const dashboards = workspace ? await listDashboards(supabase, workspace.id) : [];
+  const [dashboards, connections] = workspace
+    ? await Promise.all([
+        listDashboards(supabase, workspace.id),
+        listWorkspaceConnections(supabase, workspace.id),
+      ])
+    : [[], []];
   const workspaceName = workspace?.name ?? "Workspace";
   const workspaceInitial = workspaceName.charAt(0).toUpperCase();
 
@@ -45,7 +55,7 @@ export async function Sidebar() {
         <ChevronDownIcon />
       </div>
 
-      {/* DASHBOARDS */}
+      {/* DASHBOARDS + Connexions + Nouveau */}
       <div className="flex flex-1 flex-col gap-1 overflow-y-auto">
         <div className="px-2 pb-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--ink-3)]">
           Dashboards
@@ -58,6 +68,14 @@ export async function Sidebar() {
             Nouveau
           </div>
           <NewDashboardForm compact />
+        </div>
+
+        {/* CONNEXIONS — sources OAuth */}
+        <div className="mt-3 border-t border-[var(--line)] pt-3">
+          <div className="mb-1.5 px-2 font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-[var(--ink-3)]">
+            Connexions
+          </div>
+          <ConnectionsList connections={connections} />
         </div>
       </div>
 

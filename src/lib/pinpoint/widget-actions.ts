@@ -16,6 +16,7 @@ const DEFAULT_SIZE: Record<string, { w: number; h: number }> = {
 export async function pinWidget(
   dashboardId: string,
   configJson: unknown,
+  connectionId?: string,
 ): Promise<PinResult> {
   const parsed = WidgetSchema.safeParse(configJson);
   if (!parsed.success) {
@@ -28,6 +29,7 @@ export async function pinWidget(
     .from("widgets")
     .insert({
       dashboard_id: dashboardId,
+      connection_id: connectionId ?? null,
       kind: parsed.data.kind,
       config_jsonb: parsed.data,
       position_jsonb: { x: 0, y: 0, w: size.w, h: size.h },

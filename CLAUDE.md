@@ -58,14 +58,9 @@ supabase/
 
 ## Phase en cours
 
-**Phase 15 — Tablo Design System + page Settings utilisateur** : code-complete sur `feature/15-design-tablo`, prête pour PR. Voir `.workflow/phases/15-design-tablo/{PRD,SPEC,PLAN}.md`.
+**Phase 14.1 — Connecteur Supabase OAuth** : code-complete sur `feature/14-user-connector`, en attente du test live + restyle modale Tablo (alignement avec le design system 02-connect.jsx). Reprendre depuis `.workflow/sessions/2026-04-28-phase14-mvp-code-complete.md`.
 
-Apporte :
-- 4 nouvelles palettes (steel/spectrum/sunset/citrus) en additif aux 5 legacy → 9 palettes au total
-- Page `/app/settings/appearance` (Server Component) avec live preview, remplaçant le panneau inline `TweaksToggle` de la sidebar
-- Wordmark `tablo` (SVG palette-aware) → remplace le carré « P »
-- Fonts Inter Tight + JetBrains Mono (next/font/google) → remplacent Geist
-- Composants utilitaires `<TabloWordmark>` + `<SectionLabel>`
+**Phase 15 — Tablo Design System** : mergée le 2026-04-30 (PR #17). Apporte les 4 palettes Tablo (steel/spectrum/sunset/citrus) additives aux 5 legacy → 9 palettes au total, la page `/app/settings/appearance` (Server Component, live preview), le wordmark `tablo` SVG palette-aware, fonts Inter Tight + JetBrains Mono, composants `<TabloWordmark>` + `<SectionLabel>`, sidebar/dashboard/chat/empty-states alignés sur le design system Tablo, mobile shell responsive (drawer + top-bar). Voir `.workflow/phases/15-design-tablo/{PRD,SPEC,PLAN}.md`.
 
 **Pivot scope 2026-04-26** : passage SaaS Analytics → E-commerce après réception du design handoff (`design_handoff_dashboard_widgets/`). Voir `.workflow/PRD.md` v2 et D006/D007 dans `.workflow/DECISIONS.md`.
 

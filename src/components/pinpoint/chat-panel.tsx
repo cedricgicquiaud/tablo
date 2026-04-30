@@ -1,12 +1,14 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { generateWidget } from "@/lib/ai/generate-widget";
 import type { GenerateResult } from "@/lib/ai/generate-widget.types";
 import { pinWidget } from "@/lib/pinpoint/widget-actions";
 import { DynamicWidget } from "@/components/widgets/dynamic-widget";
+import { Icon } from "@/components/widgets/icon";
 import type { WidgetConfig } from "@/lib/ai/widget-schema";
 import type { WidgetData } from "@/lib/ai/extract-preview";
+import type { ConnectionSummary } from "@/lib/queries/pinpoint";
 
 const SUGGESTIONS = [
   "Mon revenu de ce mois",
@@ -63,10 +65,21 @@ type Message =
       data: WidgetData;
       tokens: { input: number; output: number };
       pinned: boolean;
+      connectionId: string | null;
       id: number;
     };
 
-export function ChatPanel({ dashboardId }: { dashboardId: string }) {
+export function ChatPanel({
+  dashboardId,
+  connections,
+}: {
+  dashboardId: string;
+  connections: ConnectionSummary[];
+}) {
+  const activeConnections = useMemo(
+    () => connections.filter((c) => c.status === "active"),
+    [connections],
+  );
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -74,6 +87,9 @@ export function ChatPanel({ dashboardId }: { dashboardId: string }) {
   const [pinningId, setPinningId] = useState<number | null>(null);
   const [, startPinning] = useTransition();
   const idCounter = useRef(0);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(
+    activeConnections[0]?.id ?? null,
+  );
 
   function nextId(): number {
     idCounter.current += 1;
@@ -87,7 +103,7 @@ export function ChatPanel({ dashboardId }: { dashboardId: string }) {
     setPrompt("");
 
     startGenerating(async () => {
-      const r: GenerateResult = await generateWidget(text);
+      const r: GenerateResult = await generateWidget(text, selectedConnectionId ?? undefined);
       setMessages((m) => {
         if (!r.ok) {
           return [...m, { kind: "ai-error", text: r.error, id: nextId() }];
@@ -101,6 +117,7 @@ export function ChatPanel({ dashboardId }: { dashboardId: string }) {
             data: r.data,
             tokens: r.tokens,
             pinned: false,
+            connectionId: selectedConnectionId,
             id: nextId(),
           },
         ];
@@ -113,7 +130,7 @@ export function ChatPanel({ dashboardId }: { dashboardId: string }) {
     if (!msg || msg.kind !== "ai-widget" || msg.pinned) return;
     setPinningId(messageId);
     startPinning(async () => {
-      const r = await pinWidget(dashboardId, msg.config);
+      const r = await pinWidget(dashboardId, msg.config, msg.connectionId ?? undefined);
       setPinningId(null);
       if (r.ok) {
         setMessages((arr) =>
@@ -147,7 +164,7 @@ export function ChatPanel({ dashboardId }: { dashboardId: string }) {
             : "0 6px 16px -4px color-mix(in oklab, var(--accent) 40%, transparent)",
         }}
       >
-        {open ? <CloseIcon /> : <SparklesIcon size={14} />}
+        {open ? <Icon name="close" size={14} /> : <SparklesIcon size={14} />}
         {open ? "Fermer" : "Ask"}
         {!open && (
           <span
@@ -207,7 +224,7 @@ export function ChatPanel({ dashboardId }: { dashboardId: string }) {
             aria-label="Fermer"
             className="rounded-md p-1 text-[var(--ink-3)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
           >
-            <CloseIcon />
+            <Icon name="close" size={14} />
           </button>
         </div>
 
@@ -268,6 +285,29 @@ export function ChatPanel({ dashboardId }: { dashboardId: string }) {
                   + {s}
                 </button>
               ))}
+            </div>
+          ) : null}
+
+          {activeConnections.length > 1 ? (
+            <div className="mb-2 flex items-center gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--ink-3)]">
+                SOURCE
+              </span>
+              <select
+                value={selectedConnectionId ?? ""}
+                onChange={(e) =>
+                  setSelectedConnectionId(e.target.value || null)
+                }
+                disabled={isGenerating}
+                className="flex-1 rounded-[var(--radius-tag-sm)] border bg-[var(--surface-2)] px-2 py-1 text-[11.5px] text-[var(--ink-2)] outline-none focus:border-[var(--accent)] disabled:opacity-50"
+                style={{ borderColor: "var(--line)" }}
+              >
+                {activeConnections.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
           ) : null}
 
@@ -450,7 +490,7 @@ function AiWidgetBubble({
             border: message.pinned ? "1px solid var(--accent-3)" : "none",
           }}
         >
-          {message.pinned ? <CheckIcon /> : <PinIcon />}
+          {message.pinned ? <Icon name="check" size={11} /> : <PinIcon />}
           {message.pinned ? "Épinglé" : "Pin to dashboard"}
         </button>
         <button
@@ -536,25 +576,6 @@ function SparklesIcon({
   );
 }
 
-function CloseIcon() {
-  return (
-    <svg
-      width={14}
-      height={14}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
-
 function ArrowUpIcon() {
   return (
     <svg
@@ -589,24 +610,6 @@ function PinIcon() {
     >
       <line x1="12" y1="17" x2="12" y2="22" />
       <path d="M9 10V3h6v7l3 4H6l3-4z" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      width={10}
-      height={10}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <polyline points="20 6 9 17 4 12" />
     </svg>
   );
 }

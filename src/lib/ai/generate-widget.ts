@@ -2,15 +2,38 @@
 
 import type Anthropic from "@anthropic-ai/sdk";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getDataSource, getDemoDataSource } from "@/lib/connectors/registry";
+import type { Connection } from "@/lib/connectors/types";
 import { AI_MODEL, getAnthropicClient } from "./anthropic";
 import { extractData } from "./extract-preview";
-import { inspectTable, listTables } from "./introspect";
 import {
   WIDGET_JSON_SCHEMA,
   WidgetSchema,
   type WidgetConfig,
 } from "./widget-schema";
 import type { GenerateResult } from "./generate-widget.types";
+
+async function loadDataSource(connectionId: string | undefined) {
+  if (!connectionId) return getDemoDataSource();
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("connections")
+    .select("id, workspace_id, name, kind, config_jsonb")
+    .eq("id", connectionId)
+    .single();
+  if (error || !data) {
+    throw new Error(`Connection ${connectionId} introuvable`);
+  }
+  const conn: Connection = {
+    id: data.id,
+    workspaceId: data.workspace_id,
+    name: data.name,
+    kind: data.kind as Connection["kind"],
+    configJsonb: data.config_jsonb as Record<string, unknown>,
+  };
+  return getDataSource(conn);
+}
 
 const SYSTEM_PROMPT = `Tu es un générateur de widgets de dashboard pour un produit nommé Pinpoint.
 
@@ -131,17 +154,45 @@ const TOOLS = [
   },
 ];
 
-export async function generateWidget(prompt: string): Promise<GenerateResult> {
+export async function generateWidget(
+  prompt: string,
+  connectionId?: string,
+): Promise<GenerateResult> {
   if (!prompt || prompt.trim().length < 3) {
     return { ok: false, error: "Décris ta demande en quelques mots." };
   }
+
+  // R28 — IDOR guard : si connectionId fourni, RLS doit confirmer que la
+  // connexion appartient au workspace de l'utilisateur authentifié. Sans ce
+  // check, un attaquant pourrait passer le connection_id d'un autre user et
+  // exfiltrer ses données via ses tokens OAuth chiffrés.
+  if (connectionId) {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { ok: false, error: "Non authentifié" };
+    const { data: ownedConn } = await supabase
+      .from("connections")
+      .select("id")
+      .eq("id", connectionId)
+      .single();
+    if (!ownedConn) return { ok: false, error: "Connexion introuvable" };
+  }
+
   let anthropic;
   try {
     anthropic = getAnthropicClient();
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Erreur Anthropic" };
   }
-  const admin = createSupabaseAdminClient();
+
+  let ds;
+  try {
+    ds = await loadDataSource(connectionId);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Connexion introuvable" };
+  }
 
   const messages: Anthropic.Messages.MessageParam[] = [
     { role: "user", content: prompt },
@@ -204,7 +255,7 @@ export async function generateWidget(prompt: string): Promise<GenerateResult> {
     for (const tu of toolUses) {
       try {
         if (tu.name === "list_tables") {
-          const tables = await listTables(admin);
+          const tables = await ds.listTables();
           toolResults.push({
             type: "tool_result",
             tool_use_id: tu.id,
@@ -212,7 +263,7 @@ export async function generateWidget(prompt: string): Promise<GenerateResult> {
           });
         } else if (tu.name === "inspect_table") {
           const args = tu.input as { table_name: string };
-          const detail = await inspectTable(admin, args.table_name);
+          const detail = await ds.inspectTable(args.table_name);
           toolResults.push({
             type: "tool_result",
             tool_use_id: tu.id,
@@ -269,18 +320,15 @@ export async function generateWidget(prompt: string): Promise<GenerateResult> {
     };
   }
 
-  const { data: rows, error: sqlErr } = await admin.rpc("run_readonly_query", {
-    query_sql: proposedConfig.query.sql,
-  });
-  if (sqlErr) {
-    return { ok: false, error: `Erreur SQL : ${sqlErr.message}` };
-  }
-  const arr = rows as Array<Record<string, unknown>>;
-  if (!Array.isArray(arr)) {
-    return { ok: false, error: "Réponse SQL invalide" };
+  let rows: Array<Record<string, unknown>>;
+  try {
+    rows = await ds.runQuery(proposedConfig.query.sql);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Erreur SQL inconnue";
+    return { ok: false, error: `Erreur SQL : ${message}` };
   }
 
-  const extracted = extractData(proposedConfig, arr);
+  const extracted = extractData(proposedConfig, rows);
   if ("error" in extracted) {
     return { ok: false, error: extracted.error };
   }
