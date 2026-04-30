@@ -27,7 +27,7 @@ export async function readTweaks(): Promise<Tweaks> {
     : "light";
   const palette = (PALETTES as readonly string[]).includes(paletteRaw ?? "")
     ? (paletteRaw as Palette)
-    : "terracotta";
+    : "steel";
   const radius = (RADII as readonly string[]).includes(radiusRaw ?? "")
     ? (radiusRaw as Radius)
     : "soft";

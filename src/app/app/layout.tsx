@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { ROUTES } from "@/lib/auth/routes";
 import { Sidebar } from "@/components/pinpoint/sidebar";
+import { MobileShell } from "@/components/pinpoint/mobile-shell";
 
 export default async function AppLayout({
   children,
@@ -10,10 +11,5 @@ export default async function AppLayout({
 }) {
   const user = await getCurrentUser();
   if (!user) redirect(ROUTES.LOGIN);
-  return (
-    <div className="flex min-h-screen w-full">
-      <Sidebar />
-      <div className="flex flex-1 flex-col overflow-x-hidden">{children}</div>
-    </div>
-  );
+  return <MobileShell sidebar={<Sidebar />}>{children}</MobileShell>;
 }

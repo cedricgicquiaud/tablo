@@ -5,10 +5,15 @@
 @custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
 /*
-  Design tokens — 5 palettes × 2 modes (light/dark).
-  Source de vérité : design_handoff_dashboard_widgets/styles.css (mise à jour bundle remote 2026-04-27).
+  Design tokens — 9 palettes × 2 modes (light/dark).
+  Sources :
+    - 5 palettes legacy (terracotta/editorial/forest/midnight/mono) issues de
+      design_handoff_dashboard_widgets/styles.css (template e-commerce, 2026-04-27).
+    - 4 palettes Tablo (steel/spectrum/sunset/citrus) issues de
+      Tablo Design System/screens/themes.jsx (2026-04-30).
   Sélection via [data-palette="X"] + [data-mode="Y"] sur <html>.
-  Défaut : terracotta + light (les valeurs :root servent de fallback SSR avant que le cookie soit lu).
+  Défaut : steel + light (cf. src/lib/ui/tweaks.ts ; les valeurs :root servent de
+  fallback SSR si aucun data-palette n'est défini).
   Radius variant via [data-radius="sharp|soft|pill"] sur <html>.
  */
 
@@ -72,31 +77,31 @@
   --negative: oklch(0.58 0.22 25);
   --warn: oklch(0.7 0.17 80);
 
-  --font-ui: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono-stack: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-ui: var(--font-inter-tight), "Inter Tight", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-inter-tight), "Inter Tight", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono-stack: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 
-  /* Default = terracotta + light (fallback si pas de data-palette/data-mode). */
-  --bg: oklch(0.9938 0.0013 106);
-  --surface: oklch(0.9938 0.0013 106);
-  --surface-2: oklch(0.9425 0.0068 97);
-  --surface-3: oklch(0.9334 0.0068 97);
-  --ink: oklch(0.2174 0.0019 106);
-  --ink-2: oklch(0.3361 0.0139 95);
-  --ink-3: oklch(0.6124 0.0044 106);
-  --ink-4: oklch(0.7661 0.0071 97);
-  --line: oklch(0.8947 0.0029 84);
-  --line-2: oklch(0.8347 0.0029 84);
-  --accent: oklch(0.6169 0.0689 38);
-  --accent-2: oklch(0.5513 0.0682 43);
-  --accent-3: oklch(0.7200 0.0700 38);
-  --accent-4: oklch(0.9000 0.0300 38);
-  --c1: oklch(0.5513 0.0682 43);
-  --c2: oklch(0.7553 0.0759 293);
-  --c3: oklch(0.8821 0.0126 91);
-  --c4: oklch(0.9126 0.0165 297);
-  --c5: oklch(0.5516 0.0719 42);
+  /* Default = steel + light (fallback si pas de data-palette/data-mode). */
+  --bg: #fbfbfc;
+  --surface: #ffffff;
+  --surface-2: #f4f5f8;
+  --surface-3: #eef0f4;
+  --ink: #0e1116;
+  --ink-2: #2a2f3a;
+  --ink-3: #6b7280;
+  --ink-4: #9aa1ad;
+  --line: #e4e7ec;
+  --line-2: #d6dae1;
+  --accent: #1f5fd1;
+  --accent-2: #1748a8;
+  --accent-3: #5a8bdc;
+  --accent-4: #eef3fc;
+  --c1: #0e1116;
+  --c2: #1f5fd1;
+  --c3: #9aa1ad;
+  --c4: #d6dae1;
+  --c5: #1748a8;
 }
 
 /* Dark mode shadows + sémantiques (toutes palettes) */
@@ -227,6 +232,102 @@
   --accent-3: oklch(0.55 0.22 340); --accent-4: oklch(0.32 0.12 340);
   --c1: oklch(0.72 0.22 340); --c2: oklch(0.85 0 0);
   --c3: oklch(0.45 0 0); --c4: oklch(0.60 0 0); --c5: oklch(0.62 0.24 340);
+}
+
+/* ─── 6. STEEL — Tablo · single steel-blue accent (most restrained) ─── */
+[data-palette="steel"][data-mode="light"] {
+  --bg: #fbfbfc; --surface: #ffffff;
+  --surface-2: #f4f5f8; --surface-3: #eef0f4;
+  --ink: #0e1116; --ink-2: #2a2f3a;
+  --ink-3: #6b7280; --ink-4: #9aa1ad;
+  --line: #e4e7ec; --line-2: #d6dae1;
+  --accent: #1f5fd1; --accent-2: #1748a8;
+  --accent-3: #5a8bdc; --accent-4: #eef3fc;
+  --c1: #0e1116; --c2: #1f5fd1; --c3: #9aa1ad; --c4: #d6dae1; --c5: #1748a8;
+  --positive: oklch(0.6 0.15 142); --negative: #b54141;
+}
+[data-palette="steel"][data-mode="dark"] {
+  --bg: #0e1116; --surface: #151921;
+  --surface-2: #181c25; --surface-3: #232833;
+  --ink: #e7eaf0; --ink-2: #a5acba;
+  --ink-3: #6b7280; --ink-4: #4a5160;
+  --line: #232833; --line-2: #2a303d;
+  --accent: #5a8bdc; --accent-2: #1f5fd1;
+  --accent-3: #7ba2e3; --accent-4: #15233f;
+  --c1: #f1f3f7; --c2: #5a8bdc; --c3: #7a818d; --c4: #3a4150; --c5: #1f5fd1;
+  --positive: oklch(0.72 0.17 142); --negative: #d04545;
+}
+
+/* ─── 7. SPECTRUM — Tablo · indigo + corail + ambre + sarcelle ─── */
+[data-palette="spectrum"][data-mode="light"] {
+  --bg: #fbfbfc; --surface: #ffffff;
+  --surface-2: #f4f5f8; --surface-3: #eef0f4;
+  --ink: #0e1116; --ink-2: #2a2f3a;
+  --ink-3: #6b7280; --ink-4: #9aa1ad;
+  --line: #e4e7ec; --line-2: #d6dae1;
+  --accent: #3a44d4; --accent-2: #262d99;
+  --accent-3: #7a83e8; --accent-4: #eef0fc;
+  --c1: #3a44d4; --c2: #e2664a; --c3: #d99a2b; --c4: #1d8a82; --c5: #262d99;
+  --positive: #1d8a82; --negative: #d04545;
+}
+[data-palette="spectrum"][data-mode="dark"] {
+  --bg: #0e1116; --surface: #151921;
+  --surface-2: #181c25; --surface-3: #232833;
+  --ink: #e7eaf0; --ink-2: #a5acba;
+  --ink-3: #6b7280; --ink-4: #4a5160;
+  --line: #232833; --line-2: #2a303d;
+  --accent: #7a83e8; --accent-2: #3a44d4;
+  --accent-3: #9aa1ee; --accent-4: #1a1d3a;
+  --c1: #7a83e8; --c2: #ee8a72; --c3: #f0b757; --c4: #46b3aa; --c5: #3a44d4;
+  --positive: #46b3aa; --negative: #ee6e6e;
+}
+
+/* ─── 8. SUNSET — Tablo · terracotta + prune + or, éditorial chaud ─── */
+[data-palette="sunset"][data-mode="light"] {
+  --bg: #fcfaf6; --surface: #ffffff;
+  --surface-2: #f4f1eb; --surface-3: #eee8de;
+  --ink: #0e1116; --ink-2: #2a2f3a;
+  --ink-3: #6b7280; --ink-4: #9aa1ad;
+  --line: #e4ddd1; --line-2: #d6cdbe;
+  --accent: #c84e2c; --accent-2: #9a3a1f;
+  --accent-3: #e87a5a; --accent-4: #fbeee8;
+  --c1: #3b2540; --c2: #c84e2c; --c3: #d4a73a; --c4: #7d4a8c; --c5: #9a3a1f;
+  --positive: #7a8a3a; --negative: #c84e2c;
+}
+[data-palette="sunset"][data-mode="dark"] {
+  --bg: #15110d; --surface: #1f1a14;
+  --surface-2: #261f17; --surface-3: #2f261c;
+  --ink: #e7eaf0; --ink-2: #b8aea0;
+  --ink-3: #8a8275; --ink-4: #5a5247;
+  --line: #2f261c; --line-2: #3d3326;
+  --accent: #e87a5a; --accent-2: #c84e2c;
+  --accent-3: #f0937a; --accent-4: #2a1810;
+  --c1: #8a6e94; --c2: #e87a5a; --c3: #e8c46a; --c4: #a978b9; --c5: #c84e2c;
+  --positive: #a8b56a; --negative: #e87a5a;
+}
+
+/* ─── 9. CITRUS — Tablo · menthe + corail + citron, frais ─── */
+[data-palette="citrus"][data-mode="light"] {
+  --bg: #fbfdfb; --surface: #ffffff;
+  --surface-2: #f1f7f3; --surface-3: #e8efea;
+  --ink: #0e1116; --ink-2: #2a2f3a;
+  --ink-3: #6b7280; --ink-4: #9aa1ad;
+  --line: #dce6df; --line-2: #c8d6cd;
+  --accent: #1aa37a; --accent-2: #127a5a;
+  --accent-3: #4cc59c; --accent-4: #e6f5ee;
+  --c1: #1aa37a; --c2: #ef5a5a; --c3: #e8c042; --c4: #3b2540; --c5: #127a5a;
+  --positive: #1aa37a; --negative: #ef5a5a;
+}
+[data-palette="citrus"][data-mode="dark"] {
+  --bg: #0d1411; --surface: #131c17;
+  --surface-2: #18241d; --surface-3: #1f2d24;
+  --ink: #e7eaf0; --ink-2: #a5b2ac;
+  --ink-3: #748079; --ink-4: #4a5650;
+  --line: #1f2d24; --line-2: #2a3a30;
+  --accent: #4cc59c; --accent-2: #1aa37a;
+  --accent-3: #6dd6b4; --accent-4: #0e2a20;
+  --c1: #4cc59c; --c2: #f47d7d; --c3: #f0d068; --c4: #a59ab5; --c5: #1aa37a;
+  --positive: #4cc59c; --negative: #f47d7d;
 }
 
 [data-radius="sharp"] {

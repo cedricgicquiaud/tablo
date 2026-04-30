@@ -58,6 +58,15 @@ supabase/
 
 ## Phase en cours
 
+**Phase 15 — Tablo Design System + page Settings utilisateur** : code-complete sur `feature/15-design-tablo`, prête pour PR. Voir `.workflow/phases/15-design-tablo/{PRD,SPEC,PLAN}.md`.
+
+Apporte :
+- 4 nouvelles palettes (steel/spectrum/sunset/citrus) en additif aux 5 legacy → 9 palettes au total
+- Page `/app/settings/appearance` (Server Component) avec live preview, remplaçant le panneau inline `TweaksToggle` de la sidebar
+- Wordmark `tablo` (SVG palette-aware) → remplace le carré « P »
+- Fonts Inter Tight + JetBrains Mono (next/font/google) → remplacent Geist
+- Composants utilitaires `<TabloWordmark>` + `<SectionLabel>`
+
 **Pivot scope 2026-04-26** : passage SaaS Analytics → E-commerce après réception du design handoff (`design_handoff_dashboard_widgets/`). Voir `.workflow/PRD.md` v2 et D006/D007 dans `.workflow/DECISIONS.md`.
 
 Phases livrées :
