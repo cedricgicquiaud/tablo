@@ -211,8 +211,11 @@ export function extractFunnel(
     if (count === null) continue;
     steps.push({ stage: getString(row, config.mapping.stage), count });
   }
-  if (steps.length === 0) return { error: "Aucune étape valide" };
-  return { kind: "funnel", steps };
+  // R45 (Phase 17 cycle C T3.4) : funnel 3-7 étapes
+  if (steps.length < 3) {
+    return { error: `Funnel nécessite au moins 3 étapes (reçu : ${steps.length})` };
+  }
+  return { kind: "funnel", steps: steps.slice(0, 7) };
 }
 
 export function extractEventTimeline(

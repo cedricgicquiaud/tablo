@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { generateWidget } from "@/lib/ai/generate-widget";
-import type { GenerateResult } from "@/lib/ai/generate-widget.types";
+import { generateWidgetStreaming } from "@/lib/ai-engine/client";
 import { pinWidget } from "@/lib/pinpoint/widget-actions";
 import { DynamicWidget } from "@/components/widgets/dynamic-widget";
 import { Icon } from "@/components/widgets/icon";
@@ -55,9 +54,17 @@ function ExplanationText({ text }: { text: string }) {
   );
 }
 
+type ToolNotif = { name: string; summary: string };
+
 type Message =
   | { kind: "user"; text: string; id: number }
   | { kind: "ai-error"; text: string; id: number }
+  | {
+      kind: "ai-streaming";
+      text: string;
+      toolNotifs: ToolNotif[];
+      id: number;
+    }
   | {
       kind: "ai-widget";
       explanation: string;
@@ -66,6 +73,7 @@ type Message =
       tokens: { input: number; output: number };
       pinned: boolean;
       connectionId: string | null;
+      followUps?: string[];
       id: number;
     };
 
@@ -98,18 +106,53 @@ export function ChatPanel({
 
   function handleSubmit(text: string) {
     if (!text.trim() || isGenerating) return;
-    const userMsg: Message = { kind: "user", text, id: nextId() };
-    setMessages((m) => [...m, userMsg]);
+    const userId = nextId();
+    const streamingId = nextId();
+    const userMsg: Message = { kind: "user", text, id: userId };
+    const streamingMsg: Message = {
+      kind: "ai-streaming",
+      text: "",
+      toolNotifs: [],
+      id: streamingId,
+    };
+    setMessages((m) => [...m, userMsg, streamingMsg]);
     setPrompt("");
 
     startGenerating(async () => {
-      const r: GenerateResult = await generateWidget(text, selectedConnectionId ?? undefined);
-      setMessages((m) => {
+      const r = await generateWidgetStreaming(text, {
+        connectionId: selectedConnectionId ?? undefined,
+        callbacks: {
+          // UI live streaming : append au texte du message ai-streaming
+          onTextDelta: (delta) => {
+            setMessages((arr) =>
+              arr.map((msg) =>
+                msg.id === streamingId && msg.kind === "ai-streaming"
+                  ? { ...msg, text: msg.text + delta }
+                  : msg,
+              ),
+            );
+          },
+          // UI live streaming : push notif tool dans le message ai-streaming
+          onToolUseNotif: (name, summary) => {
+            setMessages((arr) =>
+              arr.map((msg) =>
+                msg.id === streamingId && msg.kind === "ai-streaming"
+                  ? { ...msg, toolNotifs: [...msg.toolNotifs, { name, summary }] }
+                  : msg,
+              ),
+            );
+          },
+        },
+      });
+
+      // À la fin : remplace le message ai-streaming par le résultat final
+      setMessages((arr) => {
+        const others = arr.filter((msg) => msg.id !== streamingId);
         if (!r.ok) {
-          return [...m, { kind: "ai-error", text: r.error, id: nextId() }];
+          return [...others, { kind: "ai-error", text: r.error, id: nextId() }];
         }
         return [
-          ...m,
+          ...others,
           {
             kind: "ai-widget",
             explanation: r.explanation,
@@ -118,6 +161,7 @@ export function ChatPanel({
             tokens: r.tokens,
             pinned: false,
             connectionId: selectedConnectionId,
+            followUps: r.followUps,
             id: nextId(),
           },
         ];
@@ -245,6 +289,15 @@ export function ChatPanel({
                 if (m.kind === "ai-error") {
                   return <ErrorBubble key={m.id} text={m.text} />;
                 }
+                if (m.kind === "ai-streaming") {
+                  return (
+                    <StreamingBubble
+                      key={m.id}
+                      text={m.text}
+                      toolNotifs={m.toolNotifs}
+                    />
+                  );
+                }
                 const isPinning = pinningId === m.id;
                 return (
                   <AiWidgetBubble
@@ -252,12 +305,13 @@ export function ChatPanel({
                     message={m}
                     isPinning={isPinning}
                     onPin={() => handlePin(m.id)}
+                    onFollowUpClick={handleSubmit}
+                    isGenerating={isGenerating}
                   />
                 );
               })}
             </>
           )}
-          {isGenerating ? <TypingBubble /> : null}
         </div>
 
         {/* Footer : context chips (suggestions) + input + hint */}
@@ -439,10 +493,14 @@ function AiWidgetBubble({
   message,
   isPinning,
   onPin,
+  onFollowUpClick,
+  isGenerating,
 }: {
   message: AiWidgetMessage;
   isPinning: boolean;
   onPin: () => void;
+  onFollowUpClick: (text: string) => void;
+  isGenerating: boolean;
 }) {
   const totalTokens = message.tokens.input + message.tokens.output;
   return (
@@ -512,6 +570,156 @@ function AiWidgetBubble({
           <CodeIcon /> SQL
         </button>
       </div>
+
+      {/* Follow-up chips (Phase 17 cycle C T3.6) */}
+      <FollowUpChips
+        followUps={message.followUps}
+        onFollowUpClick={onFollowUpClick}
+        isGenerating={isGenerating}
+      />
+    </div>
+  );
+}
+
+/**
+ * Affiche 1 à 3 chips cliquables sous le widget pour proposer des
+ * questions de drill-down (R63, R64).
+ *
+ * Clamp défensif (I4) :
+ * - 0 ou undefined → ne rend rien (pas de section vide)
+ * - 1 ou 2 → render tels quels
+ * - > 3 → slice premiers 3
+ */
+function FollowUpChips({
+  followUps,
+  onFollowUpClick,
+  isGenerating,
+}: {
+  followUps?: string[];
+  onFollowUpClick: (text: string) => void;
+  isGenerating: boolean;
+}) {
+  if (!followUps || followUps.length === 0) return null;
+  const clamped = followUps.slice(0, 3);
+  return (
+    <div className="flex flex-wrap gap-1.5 pt-0.5">
+      {clamped.map((text) => (
+        <button
+          key={text}
+          type="button"
+          disabled={isGenerating}
+          onClick={() => onFollowUpClick(text)}
+          className="rounded-full border px-2.5 py-1 text-[11px] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
+          style={{
+            borderColor: "var(--line-2)",
+            color: "var(--ink-2)",
+            background: "var(--surface)",
+          }}
+        >
+          {text}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Traduit un tool call technique en phrase française accessible.
+ *
+ * Cible : utilisateur non-tech (persona dirigeant business). Pas de jargon
+ * "list_tables", "JSON", etc. Format court (~40 chars max) pour les chips.
+ */
+function humanizeToolNotif(name: string, summary: string): string {
+  // Tente d'extraire les params du JSON tronqué (peut être incomplet ".../...")
+  let parsed: Record<string, unknown> = {};
+  try {
+    parsed = JSON.parse(summary) as Record<string, unknown>;
+  } catch {
+    // Si JSON tronqué/invalide, on continue avec parsed vide
+  }
+
+  switch (name) {
+    case "list_tables":
+      return "Exploration des sources de données";
+
+    case "inspect_table": {
+      const table = parsed.table_name;
+      return typeof table === "string"
+        ? `Analyse de la table « ${table} »`
+        : "Analyse d'une table";
+    }
+
+    case "propose_widget":
+      return "Préparation du widget";
+
+    // Cycle C — anticipations
+    case "execute_sql":
+      return "Test d'une requête sur les données";
+
+    case "suggest_follow_ups":
+      return "Suggestions de questions";
+
+    // Fallback : name humanisé sans le JSON
+    default:
+      return name.replace(/_/g, " ");
+  }
+}
+
+function StreamingBubble({
+  text,
+  toolNotifs,
+}: {
+  text: string;
+  toolNotifs: ToolNotif[];
+}) {
+  // Phase placeholder : pas encore de texte ni de tool calls reçus
+  const hasContent = text.length > 0 || toolNotifs.length > 0;
+  if (!hasContent) {
+    return <TypingBubble />;
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5 self-start max-w-full">
+      {/* Tool notifs : chips humanisées en français */}
+      {toolNotifs.length > 0 && (
+        <div className="flex flex-col gap-1">
+          {toolNotifs.map((notif, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-1.5 px-2 py-1 text-[11px]"
+              style={{ color: "var(--ink-3)" }}
+            >
+              <span style={{ color: "var(--accent)" }}>→</span>
+              <span className="truncate">
+                {humanizeToolNotif(notif.name, notif.summary)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Texte qui s'écrit en live */}
+      {text.length > 0 && (
+        <div
+          className="px-2.5 py-1.5"
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--line)",
+            borderRadius: "10px 10px 10px 2px",
+            fontSize: "12px",
+            color: "var(--ink)",
+            lineHeight: "1.55",
+            maxWidth: "100%",
+          }}
+        >
+          <ExplanationText text={text} />
+          <span
+            className="ml-0.5 inline-block h-3 w-[1.5px] animate-pulse"
+            style={{ background: "var(--accent)", verticalAlign: "middle" }}
+            aria-hidden
+          />
+        </div>
+      )}
     </div>
   );
 }

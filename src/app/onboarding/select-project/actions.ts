@@ -2,11 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { decrypt, encrypt } from "@/lib/crypto/encryption";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getMyWorkspace } from "@/lib/queries/pinpoint";
 import type { SupabaseProject } from "@/lib/connectors/oauth-supabase-api";
+import { loadDataSource } from "@/lib/ai-engine/load-data-source";
+import { profileConnection } from "@/lib/ai-engine/schema-cache/populate";
 
 const SESSION_COOKIE = "pinpoint_oauth_session";
 
@@ -51,13 +54,41 @@ export async function createConnectionFromProject(formData: FormData) {
 
   // Insert via admin (RLS-bypass) — l'isolation tenant repose sur le workspace_id récupéré ci-dessus.
   const admin = createSupabaseAdminClient();
-  const { error } = await admin.from("connections").insert({
-    workspace_id: workspace.id,
-    name: project.name,
-    kind: "supabase",
-    config_jsonb: config,
+  const { data: inserted, error } = await admin
+    .from("connections")
+    .insert({
+      workspace_id: workspace.id,
+      name: project.name,
+      kind: "supabase",
+      config_jsonb: config,
+    })
+    .select("id")
+    .single();
+  if (error || !inserted) throw new Error(`Insert connection: ${error?.message ?? "unknown"}`);
+
+  const connectionId = inserted.id as string;
+
+  // Profiling fire-and-forget (R67, B2) — Next.js 16 `after()` exécute
+  // après la réponse mais dans le request lifecycle. Failure isolée :
+  // la connexion reste utilisable, status='failed' enregistré dans cache.
+  after(async () => {
+    try {
+      const dataSource = await loadDataSource(connectionId);
+      const cache = await profileConnection(dataSource);
+      await admin
+        .from("connections")
+        .update({
+          schema_cache_jsonb: cache,
+          schema_synced_at: cache.synced_at,
+        })
+        .eq("id", connectionId);
+    } catch (err) {
+      // Best-effort logging : on n'échoue pas la création de connexion
+      console.warn(
+        `[auto-profiling] échec pour connection ${connectionId}: ${err instanceof Error ? err.message : "unknown"}`,
+      );
+    }
   });
-  if (error) throw new Error(`Insert connection: ${error.message}`);
 
   // Cleanup : supprimer le cookie session OAuth.
   cookieStore.delete(SESSION_COOKIE);

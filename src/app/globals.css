@@ -101,7 +101,7 @@
   --c2: #1f5fd1;
   --c3: #9aa1ad;
   --c4: #d6dae1;
-  --c5: #1748a8;
+  --c5: #d4733a; /* terracotta — 5ᵉ teinte distincte chart */
 }
 
 /* Dark mode shadows + sémantiques (toutes palettes) */
@@ -124,7 +124,7 @@
   --accent: oklch(0.6169 0.0689 38); --accent-2: oklch(0.5513 0.0682 43);
   --accent-3: oklch(0.7200 0.0700 38); --accent-4: oklch(0.9000 0.0300 38);
   --c1: oklch(0.5513 0.0682 43); --c2: oklch(0.7553 0.0759 293);
-  --c3: oklch(0.8821 0.0126 91); --c4: oklch(0.9126 0.0165 297); --c5: oklch(0.5516 0.0719 42);
+  --c3: oklch(0.8821 0.0126 91); --c4: oklch(0.9126 0.0165 297); --c5: oklch(0.5500 0.1100 165); /* sage/teal */
 }
 [data-palette="terracotta"][data-mode="dark"] {
   --bg: oklch(0.2389 0.0019 106); --surface: oklch(0.2682 0.0018 106);
@@ -135,7 +135,7 @@
   --accent: oklch(0.6789 0.0635 39); --accent-2: oklch(0.6169 0.0689 38);
   --accent-3: oklch(0.5500 0.0700 38); --accent-4: oklch(0.3500 0.0500 38);
   --c1: oklch(0.6789 0.0635 39); --c2: oklch(0.7553 0.0759 293);
-  --c3: oklch(0.5000 0.0400 91); --c4: oklch(0.4500 0.0260 290); --c5: oklch(0.5516 0.0719 42);
+  --c3: oklch(0.5000 0.0400 91); --c4: oklch(0.4500 0.0260 290); --c5: oklch(0.6500 0.1100 165); /* sage/teal */
 }
 
 /* ─── 2. EDITORIAL — papier blanc, encre pure, rouge brique ─── */
@@ -148,7 +148,7 @@
   --accent: oklch(0.50 0.18 27); --accent-2: oklch(0.42 0.18 27);
   --accent-3: oklch(0.62 0.16 27); --accent-4: oklch(0.93 0.04 27);
   --c1: oklch(0.50 0.18 27); --c2: oklch(0.30 0 0);
-  --c3: oklch(0.75 0.10 75); --c4: oklch(0.65 0 0); --c5: oklch(0.42 0.18 27);
+  --c3: oklch(0.75 0.10 75); --c4: oklch(0.65 0 0); --c5: oklch(0.50 0.13 230); /* bleu nuit */
 }
 [data-palette="editorial"][data-mode="dark"] {
   --bg: oklch(0.13 0 0); --surface: oklch(0.17 0 0);
@@ -159,7 +159,7 @@
   --accent: oklch(0.68 0.18 27); --accent-2: oklch(0.58 0.20 27);
   --accent-3: oklch(0.50 0.18 27); --accent-4: oklch(0.30 0.10 27);
   --c1: oklch(0.68 0.18 27); --c2: oklch(0.85 0 0);
-  --c3: oklch(0.72 0.13 75); --c4: oklch(0.45 0 0); --c5: oklch(0.58 0.20 27);
+  --c3: oklch(0.72 0.13 75); --c4: oklch(0.45 0 0); --c5: oklch(0.65 0.13 230); /* bleu nuit */
 }
 
 /* ─── 3. FOREST — vert profond + sable, bronze accent ─── */
@@ -172,7 +172,7 @@
   --accent: oklch(0.45 0.10 155); --accent-2: oklch(0.36 0.10 155);
   --accent-3: oklch(0.58 0.10 155); --accent-4: oklch(0.90 0.04 155);
   --c1: oklch(0.45 0.10 155); --c2: oklch(0.62 0.12 75);
-  --c3: oklch(0.80 0.06 110); --c4: oklch(0.55 0.06 200); --c5: oklch(0.36 0.10 155);
+  --c3: oklch(0.80 0.06 110); --c4: oklch(0.55 0.06 200); --c5: oklch(0.55 0.13 295); /* violet */
 }
 [data-palette="forest"][data-mode="dark"] {
   --bg: oklch(0.20 0.025 155); --surface: oklch(0.24 0.028 155);
@@ -183,7 +183,7 @@
   --accent: oklch(0.72 0.13 90); --accent-2: oklch(0.62 0.13 85);
   --accent-3: oklch(0.55 0.12 90); --accent-4: oklch(0.35 0.08 90);
   --c1: oklch(0.72 0.13 90); --c2: oklch(0.65 0.10 155);
-  --c3: oklch(0.50 0.08 110); --c4: oklch(0.55 0.08 200); --c5: oklch(0.62 0.13 85);
+  --c3: oklch(0.50 0.08 110); --c4: oklch(0.55 0.08 200); --c5: oklch(0.65 0.13 295); /* violet */
 }
 
 /* ─── 4. MIDNIGHT — bleu nuit + cyan électrique ─── */
@@ -196,7 +196,7 @@
   --accent: oklch(0.55 0.16 250); --accent-2: oklch(0.45 0.18 252);
   --accent-3: oklch(0.66 0.14 248); --accent-4: oklch(0.92 0.05 245);
   --c1: oklch(0.55 0.16 250); --c2: oklch(0.65 0.14 195);
-  --c3: oklch(0.78 0.10 245); --c4: oklch(0.60 0.13 320); --c5: oklch(0.45 0.18 252);
+  --c3: oklch(0.78 0.10 245); --c4: oklch(0.60 0.13 320); --c5: oklch(0.62 0.16 30); /* corail */
 }
 [data-palette="midnight"][data-mode="dark"] {
   --bg: oklch(0.16 0.025 255); --surface: oklch(0.20 0.028 255);
@@ -207,7 +207,7 @@
   --accent: oklch(0.78 0.16 200); --accent-2: oklch(0.68 0.17 200);
   --accent-3: oklch(0.58 0.16 200); --accent-4: oklch(0.32 0.10 220);
   --c1: oklch(0.78 0.16 200); --c2: oklch(0.70 0.16 280);
-  --c3: oklch(0.55 0.12 255); --c4: oklch(0.65 0.16 320); --c5: oklch(0.68 0.17 200);
+  --c3: oklch(0.55 0.12 255); --c4: oklch(0.65 0.16 320); --c5: oklch(0.72 0.16 30); /* corail */
 }
 
 /* ─── 5. MONO — gris neutre + magenta unique (Linear/Vercel) ─── */
@@ -220,7 +220,7 @@
   --accent: oklch(0.58 0.22 340); --accent-2: oklch(0.48 0.24 340);
   --accent-3: oklch(0.68 0.20 340); --accent-4: oklch(0.94 0.05 340);
   --c1: oklch(0.58 0.22 340); --c2: oklch(0.40 0 0);
-  --c3: oklch(0.78 0 0); --c4: oklch(0.60 0 0); --c5: oklch(0.48 0.24 340);
+  --c3: oklch(0.78 0 0); --c4: oklch(0.60 0 0); --c5: oklch(0.55 0.18 240); /* bleu */
 }
 [data-palette="mono"][data-mode="dark"] {
   --bg: oklch(0.14 0 0); --surface: oklch(0.18 0 0);
@@ -231,7 +231,7 @@
   --accent: oklch(0.72 0.22 340); --accent-2: oklch(0.62 0.24 340);
   --accent-3: oklch(0.55 0.22 340); --accent-4: oklch(0.32 0.12 340);
   --c1: oklch(0.72 0.22 340); --c2: oklch(0.85 0 0);
-  --c3: oklch(0.45 0 0); --c4: oklch(0.60 0 0); --c5: oklch(0.62 0.24 340);
+  --c3: oklch(0.45 0 0); --c4: oklch(0.60 0 0); --c5: oklch(0.65 0.18 240); /* bleu */
 }
 
 /* ─── 6. STEEL — Tablo · single steel-blue accent (most restrained) ─── */
@@ -243,7 +243,7 @@
   --line: #e4e7ec; --line-2: #d6dae1;
   --accent: #1f5fd1; --accent-2: #1748a8;
   --accent-3: #5a8bdc; --accent-4: #eef3fc;
-  --c1: #0e1116; --c2: #1f5fd1; --c3: #9aa1ad; --c4: #d6dae1; --c5: #1748a8;
+  --c1: #0e1116; --c2: #1f5fd1; --c3: #9aa1ad; --c4: #d6dae1; --c5: #d4733a; /* terracotta */
   --positive: oklch(0.6 0.15 142); --negative: #b54141;
 }
 [data-palette="steel"][data-mode="dark"] {
@@ -254,7 +254,7 @@
   --line: #232833; --line-2: #2a303d;
   --accent: #5a8bdc; --accent-2: #1f5fd1;
   --accent-3: #7ba2e3; --accent-4: #15233f;
-  --c1: #f1f3f7; --c2: #5a8bdc; --c3: #7a818d; --c4: #3a4150; --c5: #1f5fd1;
+  --c1: #f1f3f7; --c2: #5a8bdc; --c3: #7a818d; --c4: #3a4150; --c5: #e87a4a; /* terracotta clair */
   --positive: oklch(0.72 0.17 142); --negative: #d04545;
 }
 
@@ -267,7 +267,7 @@
   --line: #e4e7ec; --line-2: #d6dae1;
   --accent: #3a44d4; --accent-2: #262d99;
   --accent-3: #7a83e8; --accent-4: #eef0fc;
-  --c1: #3a44d4; --c2: #e2664a; --c3: #d99a2b; --c4: #1d8a82; --c5: #262d99;
+  --c1: #3a44d4; --c2: #e2664a; --c3: #d99a2b; --c4: #1d8a82; --c5: #b14ab5; /* magenta */
   --positive: #1d8a82; --negative: #d04545;
 }
 [data-palette="spectrum"][data-mode="dark"] {
@@ -278,7 +278,7 @@
   --line: #232833; --line-2: #2a303d;
   --accent: #7a83e8; --accent-2: #3a44d4;
   --accent-3: #9aa1ee; --accent-4: #1a1d3a;
-  --c1: #7a83e8; --c2: #ee8a72; --c3: #f0b757; --c4: #46b3aa; --c5: #3a44d4;
+  --c1: #7a83e8; --c2: #ee8a72; --c3: #f0b757; --c4: #46b3aa; --c5: #d268d6; /* magenta clair */
   --positive: #46b3aa; --negative: #ee6e6e;
 }
 
@@ -291,7 +291,7 @@
   --line: #e4ddd1; --line-2: #d6cdbe;
   --accent: #c84e2c; --accent-2: #9a3a1f;
   --accent-3: #e87a5a; --accent-4: #fbeee8;
-  --c1: #3b2540; --c2: #c84e2c; --c3: #d4a73a; --c4: #7d4a8c; --c5: #9a3a1f;
+  --c1: #3b2540; --c2: #c84e2c; --c3: #d4a73a; --c4: #7d4a8c; --c5: #6a8a3a; /* sage/olive */
   --positive: #7a8a3a; --negative: #c84e2c;
 }
 [data-palette="sunset"][data-mode="dark"] {
@@ -302,7 +302,7 @@
   --line: #2f261c; --line-2: #3d3326;
   --accent: #e87a5a; --accent-2: #c84e2c;
   --accent-3: #f0937a; --accent-4: #2a1810;
-  --c1: #8a6e94; --c2: #e87a5a; --c3: #e8c46a; --c4: #a978b9; --c5: #c84e2c;
+  --c1: #8a6e94; --c2: #e87a5a; --c3: #e8c46a; --c4: #a978b9; --c5: #8aa84a; /* sage clair */
   --positive: #a8b56a; --negative: #e87a5a;
 }
 
@@ -315,7 +315,7 @@
   --line: #dce6df; --line-2: #c8d6cd;
   --accent: #1aa37a; --accent-2: #127a5a;
   --accent-3: #4cc59c; --accent-4: #e6f5ee;
-  --c1: #1aa37a; --c2: #ef5a5a; --c3: #e8c042; --c4: #3b2540; --c5: #127a5a;
+  --c1: #1aa37a; --c2: #ef5a5a; --c3: #e8c042; --c4: #3b2540; --c5: #4a8acd; /* bleu */
   --positive: #1aa37a; --negative: #ef5a5a;
 }
 [data-palette="citrus"][data-mode="dark"] {
@@ -326,7 +326,7 @@
   --line: #1f2d24; --line-2: #2a3a30;
   --accent: #4cc59c; --accent-2: #1aa37a;
   --accent-3: #6dd6b4; --accent-4: #0e2a20;
-  --c1: #4cc59c; --c2: #f47d7d; --c3: #f0d068; --c4: #a59ab5; --c5: #1aa37a;
+  --c1: #4cc59c; --c2: #f47d7d; --c3: #f0d068; --c4: #a59ab5; --c5: #6da9e3; /* bleu clair */
   --positive: #4cc59c; --negative: #f47d7d;
 }
 

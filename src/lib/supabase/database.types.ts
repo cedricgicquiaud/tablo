@@ -34,6 +34,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_engine_audit: {
+        Row: {
+          connection_id: string | null
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          rows_count: number | null
+          sql_truncated: string | null
+          status: string
+          tool: string
+          workspace_id: string
+        }
+        Insert: {
+          connection_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          rows_count?: number | null
+          sql_truncated?: string | null
+          status: string
+          tool: string
+          workspace_id: string
+        }
+        Update: {
+          connection_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          rows_count?: number | null
+          sql_truncated?: string | null
+          status?: string
+          tool?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_engine_audit_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_engine_audit_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_threads: {
         Row: {
           cost_cents: number

@@ -5,7 +5,7 @@ import { formatCompactCents } from "@/lib/format/cents";
 import type { DonutData } from "@/lib/ai/extract-preview";
 import type { DonutConfig, Format } from "@/lib/ai/widget-schema";
 
-const SEGMENT_COLORS = ["var(--accent)", "var(--c2)", "var(--c3)", "var(--c4)", "var(--c5)"];
+const SEGMENT_COLORS = ["var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)", "var(--c5)"];
 const RADIUS = 70;
 const INNER = 50;
 const CX = 100;

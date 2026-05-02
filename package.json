@@ -15,7 +15,8 @@
     "db:reset": "supabase db reset",
     "db:types": "mkdir -p src/lib/supabase && supabase gen types typescript --local > src/lib/supabase/database.types.ts",
     "db:seed": "bun run scripts/seed.ts",
-    "db:fresh": "supabase db reset && bun run db:seed"
+    "db:fresh": "supabase db reset && bun run db:seed",
+    "bench:ai": "bun run scripts/bench-ai-engine.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
