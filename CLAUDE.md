@@ -58,9 +58,13 @@ supabase/
 
 ## Phase en cours
 
-**Phase 14.1 — Connecteur Supabase OAuth** : code-complete sur `feature/14-user-connector`, en attente du test live + restyle modale Tablo (alignement avec le design system 02-connect.jsx). Reprendre depuis `.workflow/sessions/2026-04-28-phase14-mvp-code-complete.md`.
+**Aucune phase active.** Phase 17 livrée le 2026-05-03 (PR #20 mergée, squash `76978f1`). Reprendre via `.workflow/sessions/2026-05-03-phase17-livre.md` pour le contexte session précédente, puis choisir la prochaine phase dans BACKLOG.
+
+**Phase 17 — Moteur AI modulaire** : mergée le 2026-05-03 (PR #20). Refactor complet `src/lib/ai/generate-widget.ts` (343 lignes monolithique) en library modulaire `src/lib/ai-engine/` (25+ fichiers) inspirée Nao Apache 2.0. 4 capacités majeures : streaming SSE Web Streams natif, profiling fire-and-forget au connect, schema cache populé/lu (résout R22 R23 bug `closed_won`), `suggest_follow_ups` avec feature flag. 3 cycles A/B/C avec TDD strict + advisor critique appliquée. 7 hotfix issus du smoke testing manuel. 183 tests verts. Audit table `ai_engine_audit`. Bench script `bun run bench:ai`. Voir `.workflow/phases/17-ai-engine/{SPEC,PLAN,REVIEW}.md`.
 
 **Phase 15 — Tablo Design System** : mergée le 2026-04-30 (PR #17). Apporte les 4 palettes Tablo (steel/spectrum/sunset/citrus) additives aux 5 legacy → 9 palettes au total, la page `/app/settings/appearance` (Server Component, live preview), le wordmark `tablo` SVG palette-aware, fonts Inter Tight + JetBrains Mono, composants `<TabloWordmark>` + `<SectionLabel>`, sidebar/dashboard/chat/empty-states alignés sur le design system Tablo, mobile shell responsive (drawer + top-bar). Voir `.workflow/phases/15-design-tablo/{PRD,SPEC,PLAN}.md`.
+
+**Phase 14.1 — Connecteur Supabase OAuth** : mergée le 2026-04-30 (PR #18). Connexion OAuth d'une DB Supabase user, multi-source via `DataSource` interface, IDOR guard sur `connectionId`, `connections.config_jsonb` chiffré AES-256-GCM. Voir `.workflow/phases/14-user-connector/`.
 
 **Pivot scope 2026-04-26** : passage SaaS Analytics → E-commerce après réception du design handoff (`design_handoff_dashboard_widgets/`). Voir `.workflow/PRD.md` v2 et D006/D007 dans `.workflow/DECISIONS.md`.
 
