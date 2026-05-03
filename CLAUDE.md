@@ -58,7 +58,9 @@ supabase/
 
 ## Phase en cours
 
-**Aucune phase active.** Phase 18 livrée le 2026-05-03 (PR #22 mergée, squash `7c2bc59`). Choisir la prochaine phase dans BACKLOG.
+**Aucune phase active.** Phase 14.2 + rename Pinpoint→Tablo livrés le 2026-05-03 (PR #24 mergée, squash `0a998e2`). Choisir la prochaine phase dans BACKLOG.
+
+**Phase 14.2 — Stripe seed Cycle A + rename Tablo** : mergée le 2026-05-03 (PR #24). Script CLI qui peuple un compte Stripe test depuis la base CRM distante : 200 Customers + 166 Subscriptions + 168 Invoices, metadata `tablo_seed=v1` + `crm_company_id`/`crm_deal_id`. **DB CRM intouchée** (read-only). Persona Stripe Product = `Cipher` (distinct de l'app Tablo). 9 tests TDD (helpers `companySizeToPlan` + `getStripeClient`). Pattern retry 429 réutilisé de P14.1.1. 1 hotfix smoke `collection_method='send_invoice'` (B2B-réaliste). Rename app Pinpoint→Tablo en parallèle (57 fichiers, persona Stripe Tablo→Cipher pour résoudre collision). 244 tests verts. Voir `.workflow/phases/14.2-stripe-seed/{SPEC,PLAN,CYCLE-A,REVIEW}.md`.
 
 **Phase 18 — Auto-generated starter dashboard** : mergée le 2026-05-03 (PR #22). À la création d'une connexion OAuth, l'IA détecte le type de business via Haiku light (5 SourceKinds : ecommerce/crm/saas/finance/generic) et génère automatiquement 4-5 widgets contextualisés (kits pré-définis). Wow effect onboarding ~30s vs écran vide. Bench RNF1 ✓ (34s ≤ 45s), RNF2 ✓ ($0.093 ≤ $0.15). 17 commits dont 2 hotfix issus du smoke testing manuel (`after()` Next.js 16 chaîné, idempotence basée uniquement sur `starter_generated_at`). 231 tests verts. Voir `.workflow/phases/18-auto-starter-dashboard/{SPEC,PLAN,BENCH-PHASE-18,REVIEW}.md`.
 
