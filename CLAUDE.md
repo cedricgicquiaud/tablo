@@ -58,7 +58,9 @@ supabase/
 
 ## Phase en cours
 
-**Aucune phase active.** Phase 17 livrée le 2026-05-03 (PR #20 mergée, squash `76978f1`). Reprendre via `.workflow/sessions/2026-05-03-phase17-livre.md` pour le contexte session précédente, puis choisir la prochaine phase dans BACKLOG.
+**Aucune phase active.** Phase 17.1 livrée le 2026-05-03 (PR #21 mergée, squash `a8b0229`). Choisir la prochaine phase dans BACKLOG.
+
+**Phase 17.1 — Optim moteur AI** : mergée le 2026-05-03 (PR #21). 3 cycles : A streaming `messages.stream()` natif (token-par-token UX), B `cache_control: ephemeral` + tracking cache tokens + breakdown `estimateCostUsd` (caching inopérant en pratique sous seuil ~5000 tokens Haiku 4.5, code future-proof), C fast-path schema injection (filtre `list_tables`/`inspect_table` + préfixe user prompt avec markdown du schema → -2 turns LLM). Bench RNF : RNF3 ✓ ($0.0182 < $0.02), RNF2 -35% (6298ms vs 9759ms baseline), RNF1 dans le bruit. 204 tests verts. Voir `.workflow/phases/17.1-ai-engine-optim/{PLAN,REVIEW,BENCH-CYCLE-A,BENCH-CYCLE-B,BENCH-CYCLE-C}.md`.
 
 **Phase 17 — Moteur AI modulaire** : mergée le 2026-05-03 (PR #20). Refactor complet `src/lib/ai/generate-widget.ts` (343 lignes monolithique) en library modulaire `src/lib/ai-engine/` (25+ fichiers) inspirée Nao Apache 2.0. 4 capacités majeures : streaming SSE Web Streams natif, profiling fire-and-forget au connect, schema cache populé/lu (résout R22 R23 bug `closed_won`), `suggest_follow_ups` avec feature flag. 3 cycles A/B/C avec TDD strict + advisor critique appliquée. 7 hotfix issus du smoke testing manuel. 183 tests verts. Audit table `ai_engine_audit`. Bench script `bun run bench:ai`. Voir `.workflow/phases/17-ai-engine/{SPEC,PLAN,REVIEW}.md`.
 
