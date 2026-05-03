@@ -13,6 +13,20 @@ import type { WidgetConfig } from "./widget-schema";
 import type { WidgetData } from "@/lib/ai/extract-preview";
 
 /**
+ * Tokens consommés par une session runAgent.
+ *
+ * P17.1 Cycle B : breakdown cache. `cacheCreation` (cache miss, 1.25× input
+ * price) et `cacheRead` (cache hit, 0.10× input price) optionnels. Si non
+ * fournis, tarif input non-caché ($1/M) appliqué par `estimateCostUsd`.
+ */
+export type AgentTokens = {
+  input: number;
+  output: number;
+  cacheCreation?: number;
+  cacheRead?: number;
+};
+
+/**
  * Résultat final de `runAgent()`. Émis dans l'event SSE `done`.
  *
  * `tokens` permet de calculer le coût a posteriori (cycle B+ logging).
@@ -23,13 +37,13 @@ export type AgentResult =
       config: WidgetConfig;
       data: WidgetData;
       explanation: string;
-      tokens: { input: number; output: number };
+      tokens: AgentTokens;
       followUps?: string[];
     }
   | {
       ok: false;
       error: string;
-      tokens?: { input: number; output: number };
+      tokens?: AgentTokens;
     };
 
 /**

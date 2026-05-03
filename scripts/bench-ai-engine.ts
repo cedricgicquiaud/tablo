@@ -11,7 +11,9 @@
  */
 
 import { config as loadEnv } from "dotenv";
-loadEnv({ path: ".env.local" });
+// override:true car Bun pré-charge .env.local avec des valeurs vides pour
+// certaines vars selon l'environnement, et dotenv n'écrase pas par défaut.
+loadEnv({ path: ".env.local", override: true });
 
 import { runAgent } from "@/lib/ai-engine";
 import { createSSEStream } from "@/lib/ai-engine/utils/stream";
@@ -42,7 +44,12 @@ type BenchResult = {
   ok: boolean;
   firstTokenMs: number;
   totalMs: number;
-  tokens: { input: number; output: number };
+  tokens: {
+    input: number;
+    output: number;
+    cacheCreation?: number;
+    cacheRead?: number;
+  };
   costUsd: number;
   sql?: string;
   enumMatch?: boolean;
@@ -87,13 +94,19 @@ async function benchOne(
     }
   })();
 
-  // Lance runAgent (DemoDataSource car pas de connectionId)
+  // Si BENCH_CONNECTION_ID/BENCH_WORKSPACE_ID définis (via seed-bench-schema-cache),
+  // le fast-path schema (P17.1 Cycle C) est testé. Sinon : DemoDataSource sans cache.
+  const benchConnectionId = process.env.BENCH_CONNECTION_ID;
+  const benchWorkspaceId = process.env.BENCH_WORKSPACE_ID ?? "bench-ws";
+  const benchUserId = process.env.BENCH_USER_ID ?? "bench-user";
+
   const abortController = new AbortController();
   const runPromise = runAgent(
     {
       prompt,
-      workspaceId: "bench-ws",
-      userId: "bench-user",
+      workspaceId: benchWorkspaceId,
+      userId: benchUserId,
+      connectionId: benchConnectionId,
       signal: abortController.signal,
     },
     sse,
@@ -117,7 +130,12 @@ async function benchOne(
   }
 
   const tokens = result.tokens ?? { input: 0, output: 0 };
-  const costUsd = estimateCostUsd(tokens.input, tokens.output);
+  const costUsd = estimateCostUsd(
+    tokens.input,
+    tokens.output,
+    tokens.cacheCreation,
+    tokens.cacheRead,
+  );
 
   if (!result.ok) {
     return {
@@ -157,10 +175,14 @@ function formatResults(results: BenchResult[]): string {
 
   // Per-prompt breakdown
   out += "## Résultats détaillés\n\n";
-  out += "| Label | First-Token | Total | Tokens (in/out) | Coût | Status |\n";
-  out += "|---|---|---|---|---|---|\n";
+  out +=
+    "| Label | First-Token | Total | Tokens (in/out) | Cache (write/read) | Coût | Status |\n";
+  out += "|---|---|---|---|---|---|---|\n";
   for (const r of results) {
-    out += `| ${r.label} | ${r.firstTokenMs}ms | ${r.totalMs}ms | ${r.tokens.input}/${r.tokens.output} | $${r.costUsd.toFixed(5)} | ${r.ok ? "OK" : "FAIL"} |\n`;
+    const status = r.ok ? "OK" : `FAIL: ${r.error ?? "?"}`;
+    const cacheW = r.tokens.cacheCreation ?? 0;
+    const cacheR = r.tokens.cacheRead ?? 0;
+    out += `| ${r.label} | ${r.firstTokenMs}ms | ${r.totalMs}ms | ${r.tokens.input}/${r.tokens.output} | ${cacheW}/${cacheR} | $${r.costUsd.toFixed(5)} | ${status} |\n`;
   }
 
   // RNF aggregates (sur les 3 premiers prompts canoniques)
@@ -200,7 +222,9 @@ async function main() {
     try {
       const r = await benchOne(p.label, p.prompt, p.enumExpected ?? []);
       results.push(r);
-      console.log(`${r.ok ? "OK" : "FAIL"} (${r.totalMs}ms, $${r.costUsd.toFixed(5)})`);
+      console.log(
+        `${r.ok ? "OK" : "FAIL"} (${r.totalMs}ms, $${r.costUsd.toFixed(5)})${r.ok ? "" : ` — ${r.error ?? "no error msg"}`}`,
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "unknown";
       console.log(`THROW (${msg})`);

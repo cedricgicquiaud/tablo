@@ -49,11 +49,32 @@ import {
   isSuggestFollowUpsEnabled,
 } from "./tools/suggest-follow-ups";
 import type { ToolContext } from "./types/tool";
+import {
+  formatSchemaForPrompt,
+  isSchemaCacheUsable,
+} from "./utils/schema-prompt";
 
 const SYSTEM_PROMPT = readFileSync(
   join(process.cwd(), "src/lib/ai-engine/agents/v1/system-prompt.md"),
   "utf-8",
 );
+
+/**
+ * System prompt en blocs structurés avec cache_control ephemeral (P17.1 cycle B).
+ *
+ * Anthropic prompt caching : le bloc text immuable (~5.5 KB) est marqué pour
+ * cache. Cache miss (premier appel) = 1.25× tarif input ; cache hit = 0.10×
+ * tarif input. TTL = 5 min. Réduit massivement le coût (RNF3) et le TTFT
+ * (RNF1) à partir du 2ᵉ turn dans la même session ou entre sessions
+ * consécutives dans la fenêtre 5 min.
+ */
+const SYSTEM_PROMPT_BLOCKS: Anthropic.Messages.TextBlockParam[] = [
+  {
+    type: "text",
+    text: SYSTEM_PROMPT,
+    cache_control: { type: "ephemeral" },
+  },
+];
 
 /**
  * Définitions tools exposées au LLM. Cycle A : parité legacy
@@ -123,9 +144,23 @@ const BASE_TOOLS: Anthropic.Messages.Tool[] = [
 ];
 
 /** Tools exposés au LLM, avec feature flag suggest_follow_ups (R61, R62). */
-const TOOLS: Anthropic.Messages.Tool[] = isSuggestFollowUpsEnabled()
+const TOOLS_BASE: Anthropic.Messages.Tool[] = isSuggestFollowUpsEnabled()
   ? [...BASE_TOOLS, SUGGEST_FOLLOW_UPS_TOOL]
   : BASE_TOOLS;
+
+/**
+ * Tools avec cache_control ephemeral sur le DERNIER tool (P17.1 cycle B).
+ *
+ * Anthropic prompt caching marque la frontière de cache : tout ce qui est
+ * AVANT le breakpoint est mis en cache. Placer cache_control sur le dernier
+ * tool fait que **toute la liste tools** (~3-4 KB) est cachée. Cumulé avec le
+ * cache du SYSTEM_PROMPT_BLOCKS, ~9 KB sont cachés à chaque turn.
+ */
+const TOOLS: Anthropic.Messages.Tool[] = TOOLS_BASE.map((tool, idx, arr) =>
+  idx === arr.length - 1
+    ? { ...tool, cache_control: { type: "ephemeral" as const } }
+    : tool,
+);
 
 /**
  * Résume un input de tool pour la notification SSE (R7).
@@ -160,10 +195,21 @@ export async function runAgent(
 ): Promise<void> {
   let totalIn = 0;
   let totalOut = 0;
+  // P17.1 Cycle B : breakdown cache pour estimateCostUsd / bench reporting.
+  let totalCacheCreation = 0;
+  let totalCacheRead = 0;
   let lastText = "";
   let proposedConfig: WidgetConfig | null = null;
   let followUps: string[] = [];
   const retryCounters = new Map<string, number>();
+
+  /** Helper : tokens consommés à l'instant T, avec breakdown cache si présent. */
+  const tokensSnapshot = () => ({
+    input: totalIn,
+    output: totalOut,
+    cacheCreation: totalCacheCreation,
+    cacheRead: totalCacheRead,
+  });
 
   // 1. DataSource resolution
   let dataSource;
@@ -192,8 +238,22 @@ export async function runAgent(
     return;
   }
 
+  // Fast-path schema (P17.1 Cycle C) : si le cache est utilisable, on injecte
+  // le markdown des tables/colonnes/top_values dans le user prompt, et on retire
+  // `list_tables` + `inspect_table` de TOOLS exposés au LLM. L'IA peut alors
+  // écrire le SQL en 1-2 turns (vs 4-5 sans fast-path) → gain RNF2 majeur.
+  // R23 (enums réelles) reste résolu : top_values sont dans le markdown injecté.
+  const fastPath = isSchemaCacheUsable(schemaCache);
+  const userPrompt =
+    fastPath && schemaCache
+      ? `${formatSchemaForPrompt(schemaCache)}\n---\n\n${input.prompt}`
+      : input.prompt;
+  const tools = fastPath
+    ? TOOLS.filter((t) => t.name !== "list_tables" && t.name !== "inspect_table")
+    : TOOLS;
+
   const messages: Anthropic.Messages.MessageParam[] = [
-    { role: "user", content: input.prompt },
+    { role: "user", content: userPrompt },
   ];
 
   // 3. Boucle agent
@@ -203,31 +263,43 @@ export async function runAgent(
     if (!budget.ok) {
       sse.send({
         type: "done",
-        result: { ok: false, error: budget.error, tokens: { input: totalIn, output: totalOut } },
+        result: { ok: false, error: budget.error, tokens: tokensSnapshot() },
       });
       return;
     }
 
-    // Anthropic call avec signal propagé (R74)
-    let resp;
+    // Anthropic call avec signal propagé (R74) — streaming natif (P17.1 Cycle A).
+    // Les `text_delta` SSE sont émis token-par-token pendant le turn pour
+    // satisfaire RNF1 (first-token < 800ms). Le `Message` complet (avec
+    // tool_use_blocks agrégés) est récupéré via `stream.finalMessage()`.
+    let resp: Anthropic.Messages.Message;
     try {
-      resp = await anthropic.messages.create(
+      const stream = anthropic.messages.stream(
         {
           model: AI_MODEL,
           max_tokens: MAX_TOKENS_PER_TURN,
-          system: SYSTEM_PROMPT,
-          tools: TOOLS,
+          system: SYSTEM_PROMPT_BLOCKS,
+          tools,
           messages,
         },
         { signal: input.signal },
       );
+      for await (const event of stream) {
+        if (
+          event.type === "content_block_delta" &&
+          event.delta.type === "text_delta"
+        ) {
+          sse.send({ type: "text_delta", text: event.delta.text });
+        }
+      }
+      resp = await stream.finalMessage();
     } catch (err) {
       sse.send({
         type: "done",
         result: {
           ok: false,
           error: mapAnthropicError(err),
-          tokens: { input: totalIn, output: totalOut },
+          tokens: tokensSnapshot(),
         },
       });
       return;
@@ -235,12 +307,15 @@ export async function runAgent(
 
     totalIn += resp.usage.input_tokens;
     totalOut += resp.usage.output_tokens;
+    // P17.1 Cycle B : capture les cache hits/misses pour cost breakdown.
+    totalCacheCreation += resp.usage.cache_creation_input_tokens ?? 0;
+    totalCacheRead += resp.usage.cache_read_input_tokens ?? 0;
 
-    // Stream les blocks texte au client (R7)
+    // Capture `lastText` pour la validation narrative finale (R8).
+    // Les text_delta SSE ont déjà été émis live ci-dessus, on ne les ré-émet pas.
     for (const block of resp.content) {
       if (block.type === "text" && block.text.trim()) {
         lastText = block.text;
-        sse.send({ type: "text_delta", text: block.text });
       }
     }
 
@@ -368,7 +443,7 @@ export async function runAgent(
           result: {
             ok: false,
             error: retryCheck.error,
-            tokens: { input: totalIn, output: totalOut },
+            tokens: tokensSnapshot(),
           },
         });
         return;
@@ -401,7 +476,7 @@ export async function runAgent(
       result: {
         ok: false,
         error: narrativeCheck.error,
-        tokens: { input: totalIn, output: totalOut },
+        tokens: tokensSnapshot(),
       },
     });
     return;
@@ -414,7 +489,7 @@ export async function runAgent(
       result: {
         ok: false,
         error: "L'AI n'a pas proposé de widget. Reformule ta demande.",
-        tokens: { input: totalIn, output: totalOut },
+        tokens: tokensSnapshot(),
       },
     });
     return;
@@ -431,7 +506,7 @@ export async function runAgent(
       result: {
         ok: false,
         error: `Erreur SQL : ${errorMsg}`,
-        tokens: { input: totalIn, output: totalOut },
+        tokens: tokensSnapshot(),
       },
     });
     return;
@@ -444,7 +519,7 @@ export async function runAgent(
       result: {
         ok: false,
         error: extracted.error,
-        tokens: { input: totalIn, output: totalOut },
+        tokens: tokensSnapshot(),
       },
     });
     return;
@@ -455,7 +530,7 @@ export async function runAgent(
     config: proposedConfig,
     data: extracted,
     explanation: lastText,
-    tokens: { input: totalIn, output: totalOut },
+    tokens: tokensSnapshot(),
     ...(followUps.length > 0 ? { followUps } : {}),
   };
 

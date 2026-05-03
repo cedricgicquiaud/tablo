@@ -49,19 +49,34 @@ export const BUDGET_CAP_USD = 0.05;
  *
  * **À valider à chaque release Anthropic** : https://www.anthropic.com/api#pricing
  *
- * Actuel `claude-haiku-4-5-20251001` (consulté 2026-05-02) :
- * - Input : $1 / 1M tokens
- * - Output : $5 / 1M tokens
+ * Actuel `claude-haiku-4-5-20251001` (consulté 2026-05-03) :
+ * - Input non-caché : $1 / 1M
+ * - Cache write (creation) : $1.25 / 1M (1.25× input)
+ * - Cache read : $0.10 / 1M (0.10× input)
+ * - Output : $5 / 1M
  */
 export const INPUT_PRICE_PER_MILLION = 1;
+export const CACHE_WRITE_PRICE_PER_MILLION = 1.25;
+export const CACHE_READ_PRICE_PER_MILLION = 0.1;
 export const OUTPUT_PRICE_PER_MILLION = 5;
 
 /**
  * Calcule le coût d'une session en dollars.
+ *
+ * P17.1 Cycle B : breakdown cache. `cacheCreationTokens` (cache miss) facturés
+ * à 1.25× input price, `cacheReadTokens` (cache hit) facturés à 0.10× input
+ * price. Compatible avec l'appel legacy 2-args (cache tokens à 0).
  */
-export function estimateCostUsd(inputTokens: number, outputTokens: number): number {
+export function estimateCostUsd(
+  inputTokens: number,
+  outputTokens: number,
+  cacheCreationTokens: number = 0,
+  cacheReadTokens: number = 0,
+): number {
   return (
     (inputTokens / 1_000_000) * INPUT_PRICE_PER_MILLION +
+    (cacheCreationTokens / 1_000_000) * CACHE_WRITE_PRICE_PER_MILLION +
+    (cacheReadTokens / 1_000_000) * CACHE_READ_PRICE_PER_MILLION +
     (outputTokens / 1_000_000) * OUTPUT_PRICE_PER_MILLION
   );
 }
