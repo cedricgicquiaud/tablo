@@ -77,7 +77,7 @@ const SCHEMAS: Record<TableName, ColumnInfo[]> = {
     { name: "customer_id", type: "text", nullable: false },
     { name: "status", type: "text", nullable: false },
     { name: "plan_id", type: "text", nullable: false },
-    { name: "plan_nickname", type: "text", nullable: true },
+    { name: "plan_nickname", type: "text", nullable: false },
     { name: "unit_amount_cents", type: "integer", nullable: true },
     { name: "currency", type: "text", nullable: false },
     { name: "interval", type: "text", nullable: true },

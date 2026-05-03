@@ -74,7 +74,12 @@ export function flattenStripeSubscription(s: Stripe.Subscription): StripeRow {
     customer_id: typeof s.customer === "string" ? s.customer : s.customer.id,
     status: s.status,
     plan_id: price.id,
-    plan_nickname: price.nickname ?? meta(s.metadata, "plan"),
+    // Toujours non-null. Fallback chain garantit une valeur lisible :
+    // nickname Stripe → metadata.plan (seed P14.2) → price.id en dernier
+    // recours. Le profiler P17 indexe alors les top_values (starter/business/
+    // enterprise sur le seed démo) et l'IA group sur cette colonne plutôt
+    // que sur plan_id (UUID).
+    plan_nickname: price.nickname ?? meta(s.metadata, "plan") ?? price.id,
     unit_amount_cents: price.unit_amount ?? null,
     currency: price.currency,
     interval: price.recurring?.interval ?? null,
