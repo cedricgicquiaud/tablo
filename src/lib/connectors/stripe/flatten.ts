@@ -75,11 +75,18 @@ export function flattenStripeSubscription(s: Stripe.Subscription): StripeRow {
     status: s.status,
     plan_id: price.id,
     // Toujours non-null. Fallback chain garantit une valeur lisible :
-    // nickname Stripe → metadata.plan (seed P14.2) → price.id en dernier
-    // recours. Le profiler P17 indexe alors les top_values (starter/business/
-    // enterprise sur le seed démo) et l'IA group sur cette colonne plutôt
-    // que sur plan_id (UUID).
-    plan_nickname: price.nickname ?? meta(s.metadata, "plan") ?? price.id,
+    // 1. price.nickname (champ Stripe canonique pour le label du plan)
+    // 2. price.metadata.plan (seed P14.2 met "starter"/"business" ici)
+    // 3. subscription.metadata.plan (Subscription-level fallback)
+    // 4. price.id en dernier recours (UUID lisible mais pas idéal)
+    //
+    // Le profiler P17 indexe alors les top_values lisibles et l'IA group
+    // sur cette colonne plutôt que sur plan_id (UUID brut).
+    plan_nickname:
+      price.nickname ??
+      meta((price as unknown as { metadata?: Stripe.Metadata }).metadata, "plan") ??
+      meta(s.metadata, "plan") ??
+      price.id,
     unit_amount_cents: price.unit_amount ?? null,
     currency: price.currency,
     interval: price.recurring?.interval ?? null,
