@@ -29,7 +29,7 @@ describe("GET /oauth/supabase/callback", () => {
   it("rejette avec 400 si le state ne matche pas le cookie (R3)", async () => {
     const req = makeRequest(
       "http://localhost:3000/oauth/supabase/callback?code=abc&state=mismatched",
-      { pinpoint_oauth_state: "expected-state", pinpoint_oauth_verifier: "v" },
+      { tablo_oauth_state: "expected-state", tablo_oauth_verifier: "v" },
     );
     const res = await GET(req);
     expect(res.status).toBe(400);
@@ -64,7 +64,7 @@ describe("GET /oauth/supabase/callback", () => {
 
     const req = makeRequest(
       "http://localhost:3000/oauth/supabase/callback?code=abc&state=ok-state",
-      { pinpoint_oauth_state: "ok-state", pinpoint_oauth_verifier: "ver" },
+      { tablo_oauth_state: "ok-state", tablo_oauth_verifier: "ver" },
     );
     const res = await GET(req);
     expect([302, 307, 308]).toContain(res.status);
@@ -90,11 +90,11 @@ describe("GET /oauth/supabase/callback", () => {
 
     const req = makeRequest(
       "http://localhost:3000/oauth/supabase/callback?code=abc&state=ok-state",
-      { pinpoint_oauth_state: "ok-state", pinpoint_oauth_verifier: "ver" },
+      { tablo_oauth_state: "ok-state", tablo_oauth_verifier: "ver" },
     );
     const res = await GET(req);
     const setCookies = res.headers.getSetCookie?.() ?? [];
-    const session = setCookies.find((c) => c.startsWith("pinpoint_oauth_session="));
+    const session = setCookies.find((c) => c.startsWith("tablo_oauth_session="));
     expect(session).toBeDefined();
     expect(session).toMatch(/HttpOnly/i);
   });

@@ -87,7 +87,7 @@ export default async function DemoPage() {
             Démo publique
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-[var(--ink)]">
-            Showroom Pinpoint — E-commerce
+            Showroom Tablo — E-commerce
           </h1>
           <p className="text-sm text-[var(--ink-3)]">
             Aperçu des 16 widgets sur un dataset fictif (~3000 produits, 10k commandes).

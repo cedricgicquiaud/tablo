@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getMyWorkspace } from "@/lib/queries/pinpoint";
+import { getMyWorkspace } from "@/lib/queries/tablo";
 
 export type CreateDashboardState = { error: string | null };
 

@@ -1,4 +1,4 @@
-// Validation SQL côté Pinpoint avant envoi à un connecteur.
+// Validation SQL côté Tablo avant envoi à un connecteur.
 // L'API Supabase Management exécute en privilèges admin (postgres user) → on doit empêcher
 // toute écriture / DDL / multi-statement / trick qui passerait par notre couche.
 //

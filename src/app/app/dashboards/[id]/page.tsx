@@ -3,11 +3,11 @@ import {
   getDashboard,
   getMyWorkspace,
   listWorkspaceConnections,
-} from "@/lib/queries/pinpoint";
+} from "@/lib/queries/tablo";
 import { listPinnedWidgets } from "@/lib/queries/pinned-widgets";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ChatPanel } from "@/components/pinpoint/chat-panel";
-import { DraggableGrid } from "@/components/pinpoint/draggable-grid";
+import { ChatPanel } from "@/components/tablo/chat-panel";
+import { DraggableGrid } from "@/components/tablo/draggable-grid";
 import { SectionLabel } from "@/components/section-label";
 import { StarterProgress } from "./_starter-progress";
 

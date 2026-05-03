@@ -15,7 +15,7 @@
 import { config as loadEnv } from "dotenv";
 loadEnv({ path: ".env.local", override: true });
 
-import { generateStarterDashboard } from "@/lib/pinpoint/starter-dashboard";
+import { generateStarterDashboard } from "@/lib/tablo/starter-dashboard";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 async function main() {

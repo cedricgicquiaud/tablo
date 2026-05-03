@@ -1,4 +1,4 @@
-import type { ConnectionSummary } from "@/lib/queries/pinpoint";
+import type { ConnectionSummary } from "@/lib/queries/tablo";
 
 const KIND_LABELS: Record<string, string> = {
   demo: "Demo",

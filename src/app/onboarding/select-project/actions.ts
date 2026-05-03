@@ -6,13 +6,13 @@ import { after } from "next/server";
 import { decrypt, encrypt } from "@/lib/crypto/encryption";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { getMyWorkspace } from "@/lib/queries/pinpoint";
+import { getMyWorkspace } from "@/lib/queries/tablo";
 import type { SupabaseProject } from "@/lib/connectors/oauth-supabase-api";
 import { loadDataSource } from "@/lib/ai-engine/load-data-source";
 import { profileConnection } from "@/lib/ai-engine/schema-cache/populate";
-import { generateStarterDashboard } from "@/lib/pinpoint/starter-dashboard";
+import { generateStarterDashboard } from "@/lib/tablo/starter-dashboard";
 
-const SESSION_COOKIE = "pinpoint_oauth_session";
+const SESSION_COOKIE = "tablo_oauth_session";
 
 type SessionPayload = {
   access_token: string;

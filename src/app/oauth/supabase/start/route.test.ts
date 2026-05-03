@@ -31,7 +31,7 @@ describe("GET /oauth/supabase/start", () => {
     const res = await GET();
     const setCookies = res.headers.getSetCookie?.() ?? [];
     const verifierCookie = setCookies.find((c) =>
-      c.startsWith("pinpoint_oauth_verifier="),
+      c.startsWith("tablo_oauth_verifier="),
     );
     expect(verifierCookie).toBeDefined();
     expect(verifierCookie).toMatch(/HttpOnly/i);
@@ -41,7 +41,7 @@ describe("GET /oauth/supabase/start", () => {
   it("set un cookie state distinct du verifier", async () => {
     const res = await GET();
     const setCookies = res.headers.getSetCookie?.() ?? [];
-    const stateCookie = setCookies.find((c) => c.startsWith("pinpoint_oauth_state="));
+    const stateCookie = setCookies.find((c) => c.startsWith("tablo_oauth_state="));
     expect(stateCookie).toBeDefined();
     expect(stateCookie).toMatch(/HttpOnly/i);
   });

@@ -464,24 +464,24 @@
   }
 
   /* react-grid-layout overrides : alignement palette + smooth drop */
-  .pinpoint-grid .react-grid-item.react-grid-placeholder {
+  .tablo-grid .react-grid-item.react-grid-placeholder {
     background: color-mix(in oklab, var(--accent) 25%, transparent);
     border: 1px dashed var(--accent);
     border-radius: var(--radius);
     opacity: 1;
   }
-  .pinpoint-grid .react-grid-item > .react-resizable-handle::after {
+  .tablo-grid .react-grid-item > .react-resizable-handle::after {
     border-color: var(--ink-4);
   }
-  .pinpoint-grid .react-grid-item.react-draggable-dragging {
+  .tablo-grid .react-grid-item.react-draggable-dragging {
     z-index: 100;
     cursor: grabbing;
   }
-  .pinpoint-grid .react-grid-item.resizing {
+  .tablo-grid .react-grid-item.resizing {
     z-index: 100;
     opacity: 0.85;
   }
-  .pinpoint-grid .react-grid-item .w {
+  .tablo-grid .react-grid-item .w {
     height: 100%;
   }
 }

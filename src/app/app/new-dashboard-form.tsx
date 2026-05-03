@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import {
   createDashboard,
   type CreateDashboardState,
-} from "@/lib/pinpoint/dashboard-actions";
+} from "@/lib/tablo/dashboard-actions";
 
 const initialState: CreateDashboardState = { error: null };
 

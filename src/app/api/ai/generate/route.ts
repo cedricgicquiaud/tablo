@@ -19,7 +19,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSSEStream } from "@/lib/ai-engine/utils/stream";
 import type { StreamEvent } from "@/lib/ai-engine/types/agent";
 import { runAgent } from "@/lib/ai-engine";
-import { getMyWorkspace } from "@/lib/queries/pinpoint";
+import { getMyWorkspace } from "@/lib/queries/tablo";
 
 type RequestBody = {
   prompt?: string;

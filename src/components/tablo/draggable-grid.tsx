@@ -13,10 +13,10 @@ import type { PinnedWidget } from "@/lib/queries/pinned-widgets";
 import {
   updateWidgetsLayout,
   type WidgetPosition,
-} from "@/lib/pinpoint/layout-actions";
+} from "@/lib/tablo/layout-actions";
 import { DynamicWidget } from "@/components/widgets/dynamic-widget";
 import { Icon } from "@/components/widgets/icon";
-import { deleteWidget } from "@/lib/pinpoint/widget-actions";
+import { deleteWidget } from "@/lib/tablo/widget-actions";
 
 const COLS = { lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 };
 const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 };
@@ -95,7 +95,7 @@ export function DraggableGrid({
     <div ref={containerRef} className="w-full">
       {mounted ? (
         <ResponsiveGrid
-          className="pinpoint-grid"
+          className="tablo-grid"
           layouts={{
             lg: layout,
             md: layout,

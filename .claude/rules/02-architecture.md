@@ -36,8 +36,8 @@ Avantages :
 - Le wrapper Server Action reste tres mince (juste assemblage des deps).
 
 Exemple concret :
-- `src/lib/pinpoint/starter-pipeline.ts` : `runStarterPipeline(deps: StarterDeps)` — 10 tests TDD avec mocks legers.
-- `src/lib/pinpoint/starter-dashboard.ts` : Server Action wrapper qui cree les deps Supabase + runAgent + AbortController.
+- `src/lib/tablo/starter-pipeline.ts` : `runStarterPipeline(deps: StarterDeps)` — 10 tests TDD avec mocks legers.
+- `src/lib/tablo/starter-dashboard.ts` : Server Action wrapper qui cree les deps Supabase + runAgent + AbortController.
 
 Source : 3 occurrences detectees (P17 utils atomiques, P17.1 schema-prompt + integration runAgent, P18 starter-pipeline + wrapper).
 

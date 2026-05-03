@@ -38,7 +38,7 @@ export async function GET() {
   });
 
   const res = NextResponse.redirect(url, 302);
-  res.cookies.set("pinpoint_oauth_verifier", verifier, COOKIE_OPTS);
-  res.cookies.set("pinpoint_oauth_state", state, COOKIE_OPTS);
+  res.cookies.set("tablo_oauth_verifier", verifier, COOKIE_OPTS);
+  res.cookies.set("tablo_oauth_state", state, COOKIE_OPTS);
   return res;
 }

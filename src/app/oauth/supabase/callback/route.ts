@@ -6,9 +6,9 @@ import {
   type SupabaseProject,
 } from "@/lib/connectors/oauth-supabase-api";
 
-const SESSION_COOKIE = "pinpoint_oauth_session";
-const VERIFIER_COOKIE = "pinpoint_oauth_verifier";
-const STATE_COOKIE = "pinpoint_oauth_state";
+const SESSION_COOKIE = "tablo_oauth_session";
+const VERIFIER_COOKIE = "tablo_oauth_verifier";
+const STATE_COOKIE = "tablo_oauth_state";
 
 const SESSION_OPTS = {
   httpOnly: true,

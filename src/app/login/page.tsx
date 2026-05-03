@@ -14,7 +14,7 @@ export default function LoginPage() {
       >
         <div className="space-y-1">
           <h1 className="text-xl font-semibold tracking-tight text-[var(--ink)]">
-            Pinpoint
+            Tablo
           </h1>
           <p className="text-sm text-[var(--ink-3)]">
             Connecte-toi pour accéder à tes dashboards.

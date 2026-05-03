@@ -52,7 +52,7 @@ vi.mock("@/lib/ai-engine", () => ({
 
 // Mock getMyWorkspace : retourne un workspace fictif (l'auth a déjà validé
 // le user, on simule juste le mapping user → workspace pour le runAgent).
-vi.mock("@/lib/queries/pinpoint", () => ({
+vi.mock("@/lib/queries/tablo", () => ({
   getMyWorkspace: vi.fn(async () => ({ id: "ws-1", name: "Mon workspace" })),
 }));
 

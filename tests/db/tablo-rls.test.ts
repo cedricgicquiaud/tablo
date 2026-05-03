@@ -39,7 +39,7 @@ afterAll(async () => {
   await cleanupUser(USER_B.email);
 }, 30000);
 
-describe("RLS multi-tenant Pinpoint", () => {
+describe("RLS multi-tenant Tablo", () => {
   it("le trigger handle_new_user crée un workspace par user", async () => {
     const clientA = await authedClient(USER_A.email, USER_A.password);
     const { data, error } = await clientA

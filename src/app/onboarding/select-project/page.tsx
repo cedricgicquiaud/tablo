@@ -5,7 +5,7 @@ import { Icon } from "@/components/widgets/icon";
 import type { SupabaseProject } from "@/lib/connectors/oauth-supabase-api";
 import { createConnectionFromProject } from "./actions";
 
-const SESSION_COOKIE = "pinpoint_oauth_session";
+const SESSION_COOKIE = "tablo_oauth_session";
 
 type SessionPayload = {
   access_token: string;
@@ -105,7 +105,7 @@ export default async function SelectProjectPage() {
               <p
                 className="mt-0.5 font-mono text-[10.5px] leading-relaxed text-[var(--ink-3)]"
               >
-                Pinpoint peut lire les tables de ce projet. Aucune écriture, aucun
+                Tablo peut lire les tables de ce projet. Aucune écriture, aucun
                 schéma modifié.
               </p>
             </div>

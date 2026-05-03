@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getMyWorkspace, listDashboards } from "@/lib/queries/pinpoint";
+import { getMyWorkspace, listDashboards } from "@/lib/queries/tablo";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { SectionLabel } from "@/components/section-label";

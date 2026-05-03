@@ -6,7 +6,7 @@ import {
   getMyWorkspace,
   listDashboards,
   listWorkspaceConnections,
-} from "@/lib/queries/pinpoint";
+} from "@/lib/queries/tablo";
 import { TabloWordmark } from "@/components/tablo-wordmark";
 import { NewDashboardForm } from "@/app/app/new-dashboard-form";
 import { DashboardLinks } from "./dashboard-links";

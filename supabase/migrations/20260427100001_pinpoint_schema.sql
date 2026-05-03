@@ -1,4 +1,4 @@
--- Pinpoint multi-tenant schema (Phase 13).
+-- Tablo multi-tenant schema (Phase 13).
 -- Tables app : workspaces, connections, dashboards, widgets, ai_threads.
 -- RLS scopée par workspace_id. Le user ne voit que SES workspaces.
 

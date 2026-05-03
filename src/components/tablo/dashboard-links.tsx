@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { DashboardSummary } from "@/lib/queries/pinpoint";
+import type { DashboardSummary } from "@/lib/queries/tablo";
 
 export function DashboardLinks({ dashboards }: { dashboards: DashboardSummary[] }) {
   const pathname = usePathname();

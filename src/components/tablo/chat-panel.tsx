@@ -2,12 +2,12 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { generateWidgetStreaming } from "@/lib/ai-engine/client";
-import { pinWidget } from "@/lib/pinpoint/widget-actions";
+import { pinWidget } from "@/lib/tablo/widget-actions";
 import { DynamicWidget } from "@/components/widgets/dynamic-widget";
 import { Icon } from "@/components/widgets/icon";
 import type { WidgetConfig } from "@/lib/ai/widget-schema";
 import type { WidgetData } from "@/lib/ai/extract-preview";
-import type { ConnectionSummary } from "@/lib/queries/pinpoint";
+import type { ConnectionSummary } from "@/lib/queries/tablo";
 
 const SUGGESTIONS = [
   "Mon revenu de ce mois",
