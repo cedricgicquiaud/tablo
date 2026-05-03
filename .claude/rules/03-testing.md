@@ -46,5 +46,23 @@ L'ecart entre "tests verts" et "feature qui marche bout-en-bout" est non-trivial
 
 Source : 3 occurrences detectees (P14 OAuth, P15 design, P17 moteur AI).
 
+## Bench scriptable obligatoire pour phases avec RNF chiffres (issu de LEARN apres 3 occurrences detectees)
+
+Toute phase qui pose des RNF mesurables (latence, cout, throughput, taux de succes) doit produire un script `scripts/bench-<phase>.ts` reproductible. Le bench doit :
+
+- Etre lance via `bun run scripts/bench-<phase>.ts` ou un script npm dedie.
+- Mesurer chaque RNF de la SPEC explicitement (verdict `✓` / `✗` dans le tableau Markdown produit).
+- Retourner du code 0 si tous les RNF sont passes, code 1 sinon (utilisable en CI plus tard).
+- Etre idempotent / nettoyer ses artefacts (ex : dashboard de test cree puis supprime, ou identifie comme `[BENCH]`).
+- Documenter ses prerequis (env vars, seed DB, etc.) dans un commentaire d'en-tete.
+
+Le bench artefact doit etre commit dans `.workflow/phases/NN-nom/BENCH-*.md` avec :
+- Date d'execution
+- Tableau des RNF mesures vs cibles
+- Analyse comparative (avant / apres si refactor)
+- Commande exacte de reproduction
+
+Source : 3 occurrences detectees (P17 cycle C `bench-ai-engine.ts`, P17.1 reuse + extension, P18 `bench-starter.ts`).
+
 ---
 Ce fichier est mis a jour par le workflow FORGE (phase LEARN) quand des patterns de tests recurrents sont detectes.

@@ -58,7 +58,9 @@ supabase/
 
 ## Phase en cours
 
-**Aucune phase active.** Phase 17.1 livrée le 2026-05-03 (PR #21 mergée, squash `a8b0229`). Choisir la prochaine phase dans BACKLOG.
+**Aucune phase active.** Phase 18 livrée le 2026-05-03 (PR #22 mergée, squash `7c2bc59`). Choisir la prochaine phase dans BACKLOG.
+
+**Phase 18 — Auto-generated starter dashboard** : mergée le 2026-05-03 (PR #22). À la création d'une connexion OAuth, l'IA détecte le type de business via Haiku light (5 SourceKinds : ecommerce/crm/saas/finance/generic) et génère automatiquement 4-5 widgets contextualisés (kits pré-définis). Wow effect onboarding ~30s vs écran vide. Bench RNF1 ✓ (34s ≤ 45s), RNF2 ✓ ($0.093 ≤ $0.15). 17 commits dont 2 hotfix issus du smoke testing manuel (`after()` Next.js 16 chaîné, idempotence basée uniquement sur `starter_generated_at`). 231 tests verts. Voir `.workflow/phases/18-auto-starter-dashboard/{SPEC,PLAN,BENCH-PHASE-18,REVIEW}.md`.
 
 **Phase 17.1 — Optim moteur AI** : mergée le 2026-05-03 (PR #21). 3 cycles : A streaming `messages.stream()` natif (token-par-token UX), B `cache_control: ephemeral` + tracking cache tokens + breakdown `estimateCostUsd` (caching inopérant en pratique sous seuil ~5000 tokens Haiku 4.5, code future-proof), C fast-path schema injection (filtre `list_tables`/`inspect_table` + préfixe user prompt avec markdown du schema → -2 turns LLM). Bench RNF : RNF3 ✓ ($0.0182 < $0.02), RNF2 -35% (6298ms vs 9759ms baseline), RNF1 dans le bruit. 204 tests verts. Voir `.workflow/phases/17.1-ai-engine-optim/{PLAN,REVIEW,BENCH-CYCLE-A,BENCH-CYCLE-B,BENCH-CYCLE-C}.md`.
 
