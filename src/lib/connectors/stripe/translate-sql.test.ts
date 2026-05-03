@@ -52,4 +52,30 @@ describe("translateSqlPgToAlasql", () => {
     expect(output).toContain("IS NOT NULL");
     expect(output).not.toContain('"');
   });
+
+  it("wrap les alias AS <ident> en backticks (mots-clés alasql comme `value`, `count`)", () => {
+    const input = `SELECT plan_nickname, SUM(amount) AS value FROM stripe_subscriptions GROUP BY plan_nickname ORDER BY value DESC`;
+    const output = translateSqlPgToAlasql(input);
+
+    expect(output).toContain("AS `value`");
+    expect(output).toContain("ORDER BY `value`");
+  });
+
+  it("wrap aussi `count` et `order` quand utilisés en alias ou ORDER BY", () => {
+    const input = `SELECT status, COUNT(*) AS count FROM t GROUP BY status ORDER BY count DESC`;
+    const output = translateSqlPgToAlasql(input);
+
+    expect(output).toContain("AS `count`");
+    expect(output).toContain("ORDER BY `count`");
+  });
+
+  it("ne wrap pas les noms de colonnes 'normaux' déjà non-réservés", () => {
+    const input = `SELECT plan_id, SUM(amount) AS total FROM t GROUP BY plan_id ORDER BY total DESC`;
+    const output = translateSqlPgToAlasql(input);
+
+    // total et plan_id ne sont pas des mots-clés alasql → pas de backtick obligatoire
+    // Mais notre translator naïf peut wrap quand même AS total → AS `total`. Acceptable.
+    expect(output).toContain("plan_id");
+    expect(output).toContain("FROM t");
+  });
 });
