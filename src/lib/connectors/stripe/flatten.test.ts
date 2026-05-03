@@ -24,7 +24,7 @@ describe("flattenStripeCustomer", () => {
       delinquent: false,
       currency: "eur",
       metadata: {},
-    } as any;
+    } as unknown as Parameters<typeof flattenStripeCustomer>[0];
 
     const row = flattenStripeCustomer(c);
 
@@ -49,7 +49,7 @@ describe("flattenStripeCustomer", () => {
       delinquent: false,
       currency: null,
       metadata: {},
-    } as any;
+    } as unknown as Parameters<typeof flattenStripeCustomer>[0];
 
     const row = flattenStripeCustomer(c);
 
@@ -69,7 +69,7 @@ describe("flattenStripeCustomer", () => {
       delinquent: false,
       currency: "eur",
       metadata: { crm_company_id: "comp_xyz", tablo_seed: "v1", other: "ignored" },
-    } as any;
+    } as unknown as Parameters<typeof flattenStripeCustomer>[0];
 
     const row = flattenStripeCustomer(c);
 
@@ -103,7 +103,7 @@ describe("flattenStripeSubscription", () => {
     canceled_at: null,
     collection_method: "send_invoice",
     metadata: { crm_company_id: "comp_1", plan: "starter" },
-  } as any;
+  } as unknown as Parameters<typeof flattenStripeSubscription>[0];
 
   it("nominal — id, customer_id, status, plan_id, unit_amount_cents, interval", () => {
     const row = flattenStripeSubscription(baseSub);
@@ -198,7 +198,7 @@ describe("flattenStripeInvoice", () => {
     due_date: 1717372800,
     paid: true,
     metadata: { crm_deal_id: "deal_1" },
-  } as any;
+  } as unknown as Parameters<typeof flattenStripeInvoice>[0];
 
   it("nominal — id, customer_id, subscription_id, amount_due_cents, status, dates ISO", () => {
     const row = flattenStripeInvoice(baseInv);
@@ -254,7 +254,7 @@ describe("flattenStripeCharge", () => {
       refunded: false,
       created: 1714694400,
       payment_method_details: { type: "card" },
-    } as any;
+    } as unknown as Parameters<typeof flattenStripeCharge>[0];
 
     const row = flattenStripeCharge(ch);
 
@@ -282,7 +282,7 @@ describe("flattenStripeCharge", () => {
       refunded: false,
       created: 1714694400,
       payment_method_details: null,
-    } as any;
+    } as unknown as Parameters<typeof flattenStripeCharge>[0];
 
     const row = flattenStripeCharge(ch);
 

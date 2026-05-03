@@ -15,7 +15,6 @@
  *     connectionId → 1 seul appel SDK.
  */
 
-// @ts-expect-error pas de types officiels alasql
 import alasqlImport from "alasql";
 import type Stripe from "stripe";
 import { withRetry } from "@/lib/utils/retry";

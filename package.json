@@ -16,7 +16,8 @@
     "db:types": "mkdir -p src/lib/supabase && supabase gen types typescript --local > src/lib/supabase/database.types.ts",
     "db:seed": "bun run scripts/seed.ts",
     "db:fresh": "supabase db reset && bun run db:seed",
-    "bench:ai": "bun run scripts/bench-ai-engine.ts"
+    "bench:ai": "bun run scripts/bench-ai-engine.ts",
+    "bench:stripe-datasource": "bun run scripts/bench-stripe-datasource.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",

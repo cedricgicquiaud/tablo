@@ -29,4 +29,27 @@ describe("connector registry", () => {
     } as unknown as Connection;
     expect(() => getDataSource(conn)).toThrow(/unsupported|unknown/i);
   });
+
+  it("kind='stripe' avec config_jsonb={env_creds:true} → StripeDataSource", () => {
+    const conn: Connection = {
+      ...baseConnection,
+      kind: "stripe",
+      configJsonb: { env_creds: true },
+    };
+    const ds = getDataSource(conn);
+    expect(typeof ds.listTables).toBe("function");
+    expect(typeof ds.inspectTable).toBe("function");
+    expect(typeof ds.runQuery).toBe("function");
+  });
+
+  it("kind='stripe' avec config_jsonb invalide V1 → throw E10", () => {
+    const conn: Connection = {
+      ...baseConnection,
+      kind: "stripe",
+      configJsonb: {},
+    };
+    expect(() => getDataSource(conn)).toThrow(
+      /Stripe Connection.*config_jsonb invalide V1/,
+    );
+  });
 });

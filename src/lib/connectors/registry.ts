@@ -1,4 +1,6 @@
+import { getStripeClient } from "@/lib/stripe/client";
 import { DemoDataSource } from "./demo";
+import { StripeDataSource } from "./stripe/data-source";
 import { SupabaseOAuthDataSource } from "./supabase-oauth";
 import { getValidAccessToken } from "./token-refresh";
 import type { Connection, DataSource } from "./types";
@@ -26,10 +28,28 @@ export function getDataSource(connection: Connection): DataSource {
         getAccessToken: () => getValidAccessToken(connection.id),
       });
     }
+    case "stripe": {
+      const config = connection.configJsonb as {
+        env_creds?: boolean;
+        access_token?: string;
+      };
+      // V1 (Phase 14.3) : seul `env_creds: true` est supporté → lit
+      // STRIPE_SECRET_KEY de l'env. V2 (Phase 14.4 OAuth) ajoutera la
+      // route avec access_token chiffré.
+      if (config.env_creds !== true && !config.access_token) {
+        throw new Error(
+          `Stripe Connection ${connection.id} config_jsonb invalide V1 (attendu env_creds: true)`,
+        );
+      }
+      return new StripeDataSource({
+        connectionId: connection.id,
+        getStripeClient,
+      });
+    }
     case "postgres":
     case "csv":
       throw new Error(
-        `Connector kind '${connection.kind}' not yet implemented (Phase 14.3+).`,
+        `Connector kind '${connection.kind}' not yet implemented (unsupported, Phase 14.4+).`,
       );
     default: {
       const exhaustive: never = connection.kind;
