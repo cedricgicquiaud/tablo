@@ -12,7 +12,7 @@
  *   STRIPE_SECRET_KEY=sk_test_... dans .env.local
  *
  * SUCCÈS :
- *   RNF1 — P95 cold < 5000ms
+ *   RNF1 — P95 cold < 8000ms (acté SPEC v2, justifié par variance Stripe API)
  *   RNF2 — P95 warm < 200ms
  *   Exit code 0 si les 2 RNF passent, 1 sinon.
  */

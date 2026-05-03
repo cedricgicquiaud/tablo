@@ -78,4 +78,16 @@ describe("translateSqlPgToAlasql", () => {
     expect(output).toContain("plan_id");
     expect(output).toContain("FROM t");
   });
+
+  it("préserve les guillemets doubles à l'intérieur d'une string simple-quote (audit verifier — bloquant)", () => {
+    // L'IA pourrait générer SELECT * FROM t WHERE name = 'A "B" C'.
+    // Le translator naïf ne doit PAS wrap "B" comme un identifier.
+    const input = `SELECT * FROM "stripe_customers" WHERE "name" = 'Acme "Foo" Bar'`;
+    const output = translateSqlPgToAlasql(input);
+
+    expect(output).toContain("`stripe_customers`");
+    expect(output).toContain("`name`");
+    // La string littérale doit rester intacte
+    expect(output).toContain(`'Acme "Foo" Bar'`);
+  });
 });

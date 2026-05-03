@@ -36,7 +36,14 @@ export function getDataSource(connection: Connection): DataSource {
       // V1 (Phase 14.3) : seul `env_creds: true` est supporté → lit
       // STRIPE_SECRET_KEY de l'env. V2 (Phase 14.4 OAuth) ajoutera la
       // route avec access_token chiffré.
-      if (config.env_creds !== true && !config.access_token) {
+      if (config.access_token) {
+        // Fail-fast : V1 ne sait pas consommer un access_token user
+        // (cf audit verifier 14.3). V2 retirera ce throw.
+        throw new Error(
+          `Stripe Connection ${connection.id} : access_token présent mais OAuth non implémenté V1 (Phase 14.4)`,
+        );
+      }
+      if (config.env_creds !== true) {
         throw new Error(
           `Stripe Connection ${connection.id} config_jsonb invalide V1 (attendu env_creds: true)`,
         );

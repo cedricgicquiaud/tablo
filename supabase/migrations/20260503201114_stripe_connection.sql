@@ -7,6 +7,14 @@
 --
 -- Ne touche pas la connection 'demo' existante (P14.1a). User aura donc
 -- 2 connections par workspace : Demo (e-commerce) + Stripe demo.
+--
+-- LIMITATION V1 (audit verifier 14.3) : la connection "Stripe demo" est
+-- provisionnée pour TOUS les workspaces, sans vérifier que
+-- STRIPE_SECRET_KEY est défini. En production sans clé Stripe, le
+-- 1er chat sur cette connection throw E1 ("STRIPE_SECRET_KEY env var
+-- manquant") — UX dégradée mais sécurisé (pas de fuite). Phase 14.4
+-- (OAuth Stripe Connect) retire ce sentinel V1 et remplace par des
+-- access_token user-owned chiffrés.
 
 alter table public.connections drop constraint if exists connections_kind_check;
 alter table public.connections add constraint connections_kind_check

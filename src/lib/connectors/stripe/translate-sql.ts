@@ -28,18 +28,73 @@
  * Liste pragmatique basée sur les bugs observés en smoke + SPIKE-LOG.
  * À étendre si nouveaux faux-positifs.
  */
+// Mots-clés réservés alasql vérifiés au spike (cf SPIKE-LOG R13). Liste
+// volontairement courte — chaque entrée est associée à un cas de parse
+// error reproductible. À étendre uniquement quand un bug le motive.
 const ALASQL_KEYWORDS_AS_IDENT = [
-  "value",
-  "count",
+  "value", // smoke 14.3 round 2 : "AS value" → parse error
+  "count", // bug spike R13 : "ORDER BY count" → parse error
   "order",
   "key",
-  "status", // pas mot-clé alasql mais souvent utilisé en alias par l'IA
-  "type",
 ];
 
 export function translateSqlPgToAlasql(sql: string): string {
-  // 1. Identifiants double-quotés Postgres → backticks
-  let out = sql.replace(/"([^"]+)"/g, "`$1`");
+  // 1. Tokenizer 3 états (default / single-quote string / double-quote ident)
+  //    pour ne PAS toucher aux strings simple-quotes contenant des `"`.
+  //    Audit verifier 14.3 — bloquant : ancien `replace` regex naïf cassait
+  //    `WHERE name = 'A "B" C'` en `WHERE name = 'A `B` C'`.
+  let out = "";
+  let i = 0;
+  while (i < sql.length) {
+    const ch = sql[i];
+
+    if (ch === "'") {
+      // string simple-quote : copier verbatim jusqu'au prochain `'` non échappé.
+      // Postgres double-quote `''` à l'intérieur d'une string = échappement.
+      out += "'";
+      i++;
+      while (i < sql.length) {
+        if (sql[i] === "'" && sql[i + 1] === "'") {
+          out += "''";
+          i += 2;
+          continue;
+        }
+        if (sql[i] === "'") {
+          out += "'";
+          i++;
+          break;
+        }
+        out += sql[i];
+        i++;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      // identifier double-quote Postgres → backtick alasql.
+      // Postgres double-quote `""` à l'intérieur = échappement (rare mais valide).
+      let ident = "";
+      i++; // skip opening "
+      while (i < sql.length) {
+        if (sql[i] === '"' && sql[i + 1] === '"') {
+          ident += '"';
+          i += 2;
+          continue;
+        }
+        if (sql[i] === '"') {
+          i++;
+          break;
+        }
+        ident += sql[i];
+        i++;
+      }
+      out += "`" + ident + "`";
+      continue;
+    }
+
+    out += ch;
+    i++;
+  }
 
   // 2. Wrap les mots-clés alasql utilisés comme alias `AS xxx` ou
   //    référencés en `ORDER BY xxx` / `GROUP BY xxx`. Sans regard

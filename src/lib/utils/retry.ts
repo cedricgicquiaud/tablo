@@ -39,7 +39,9 @@ const DEFAULT_IS_RETRYABLE = (err: unknown): boolean => {
     if ("statusCode" in err && (err as { statusCode?: number }).statusCode === 429) {
       return true;
     }
-    if (err instanceof Error && /429/.test(err.message)) {
+    // Pattern resserré : `\b429\b` au lieu de `/429/` pour éviter de retry
+    // sur un message métier qui contient le nombre 429 (audit verifier 14.3).
+    if (err instanceof Error && /\b429\b/.test(err.message)) {
       return true;
     }
   }

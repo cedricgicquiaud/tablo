@@ -35,8 +35,14 @@ import {
 } from "./flatten";
 import { translateSqlPgToAlasql } from "./translate-sql";
 
+type AlasqlDatabase = {
+  tables: Record<string, { data: unknown[] }>;
+  exec: (sql: string) => unknown[];
+};
+
 const alasql = alasqlImport as unknown as ((sql: string) => unknown[]) & {
   tables: Record<string, { data: unknown[] }>;
+  Database: new () => AlasqlDatabase;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -174,22 +180,15 @@ export class StripeDataSource implements DataSource {
     validateReadOnlySql(sql);
     const cache = await this.ensureCache();
 
-    // Inject les 4 tables virtuelles dans alasql (scope global, on
-    // overwrite à chaque query par sécurité contre les contaminations
-    // entre connections).
+    // Database alasql isolée par appel : évite la fuite cross-tenant via
+    // le singleton `alasql.tables` global (audit verifier 14.3 — bloquant).
+    const db = new alasql.Database();
     for (const name of TABLE_NAMES) {
-      alasql.tables[name] = { data: cache.tables[name] };
+      db.tables[name] = { data: cache.tables[name] };
     }
 
     const translated = translateSqlPgToAlasql(sql);
-    let rows: unknown[];
-    try {
-      rows = alasql(translated);
-    } catch (err) {
-      // alasql jette des erreurs avec message explicite. On re-throw tel quel
-      // pour que les call-sites voient "Parse error", "Unknown string", etc.
-      throw err;
-    }
+    const rows = db.exec(translated) as unknown[];
 
     // alasql retourne `undefined` pour les colonnes side-droite d'un LEFT JOIN
     // sans match. Sémantique SQL standard (R15) → normaliser en `null`.
@@ -263,6 +262,7 @@ export class StripeDataSource implements DataSource {
   ): Promise<T[]> {
     const all: T[] = [];
     let startingAfter: string | undefined = undefined;
+    let lastPageHasMore = false;
 
     while (all.length < ROW_CAP_PER_TABLE) {
       const remaining = ROW_CAP_PER_TABLE - all.length;
@@ -287,6 +287,7 @@ export class StripeDataSource implements DataSource {
       });
 
       all.push(...page.data);
+      lastPageHasMore = page.has_more;
 
       if (!page.has_more) break;
       const last = page.data[page.data.length - 1];
@@ -294,17 +295,14 @@ export class StripeDataSource implements DataSource {
       startingAfter = last.id;
     }
 
-    if (all.length >= ROW_CAP_PER_TABLE) {
-      // Vérifier si la dernière page indiquait encore has_more (cap atteint)
-      const lastPage = await getResource()
-        .list({ limit: 1, starting_after: all[all.length - 1].id })
-        .catch(() => ({ data: [], has_more: false }));
-      if (lastPage.data.length > 0 || lastPage.has_more) {
-        console.warn(
-          `[Stripe DataSource] ${label} truncated at ${ROW_CAP_PER_TABLE} rows for connection ${this.deps.connectionId}`,
-        );
-        truncatedTables.push(label);
-      }
+    // Truncation détectée si on a atteint le cap ET la dernière page indiquait
+    // encore `has_more`. Réutilise l'info déjà fetchée ; pas d'API call superflu
+    // (audit verifier 14.3 — important).
+    if (all.length >= ROW_CAP_PER_TABLE && lastPageHasMore) {
+      console.warn(
+        `[Stripe DataSource] ${label} truncated at ${ROW_CAP_PER_TABLE} rows for connection ${this.deps.connectionId}`,
+      );
+      truncatedTables.push(label);
     }
 
     return all;
