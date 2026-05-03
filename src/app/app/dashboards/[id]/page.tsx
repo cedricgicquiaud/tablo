@@ -9,6 +9,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ChatPanel } from "@/components/pinpoint/chat-panel";
 import { DraggableGrid } from "@/components/pinpoint/draggable-grid";
 import { SectionLabel } from "@/components/section-label";
+import { StarterProgress } from "./_starter-progress";
 
 type Params = { id: string };
 
@@ -49,7 +50,11 @@ export default async function DashboardViewPage({
         </span>
       </div>
 
-      {pinned.length === 0 ? (
+      {/* Phase 18 (R7) : si starter_generating_at posée et pas encore terminée, afficher l'écran progress.
+          Polling 2s côté client via router.refresh() pour re-render quand un widget arrive. */}
+      {dashboard.starterGeneratingAt && !dashboard.starterGeneratedAt ? (
+        <StarterProgress widgetsPinned={pinned.length} />
+      ) : pinned.length === 0 ? (
         <DashboardEmptyState />
       ) : (
         <>

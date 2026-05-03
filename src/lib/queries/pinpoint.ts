@@ -48,6 +48,9 @@ export type DashboardSummary = {
   customAccent: string | null;
   widgetCount: number;
   createdAt: Date;
+  /** Phase 18 : starter generation timestamps. */
+  starterGeneratedAt: Date | null;
+  starterGeneratingAt: Date | null;
 };
 
 export async function getMyWorkspace(client: DashboardClient): Promise<Workspace | null> {
@@ -73,7 +76,9 @@ export async function listDashboards(
 ): Promise<DashboardSummary[]> {
   const { data, error } = await client
     .from("dashboards")
-    .select("id, workspace_id, name, palette, mode, radius, custom_accent, created_at, widgets(count)")
+    .select(
+      "id, workspace_id, name, palette, mode, radius, custom_accent, created_at, starter_generated_at, starter_generating_at, widgets(count)",
+    )
     .eq("workspace_id", workspaceId)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
@@ -87,6 +92,12 @@ export async function listDashboards(
     customAccent: row.custom_accent,
     widgetCount: row.widgets?.[0]?.count ?? 0,
     createdAt: new Date(row.created_at),
+    starterGeneratedAt: row.starter_generated_at
+      ? new Date(row.starter_generated_at)
+      : null,
+    starterGeneratingAt: row.starter_generating_at
+      ? new Date(row.starter_generating_at)
+      : null,
   }));
 }
 
@@ -96,7 +107,9 @@ export async function getDashboard(
 ): Promise<DashboardSummary | null> {
   const { data, error } = await client
     .from("dashboards")
-    .select("id, workspace_id, name, palette, mode, radius, custom_accent, created_at, widgets(count)")
+    .select(
+      "id, workspace_id, name, palette, mode, radius, custom_accent, created_at, starter_generated_at, starter_generating_at, widgets(count)",
+    )
     .eq("id", dashboardId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -111,5 +124,11 @@ export async function getDashboard(
     customAccent: data.custom_accent,
     widgetCount: data.widgets?.[0]?.count ?? 0,
     createdAt: new Date(data.created_at),
+    starterGeneratedAt: data.starter_generated_at
+      ? new Date(data.starter_generated_at)
+      : null,
+    starterGeneratingAt: data.starter_generating_at
+      ? new Date(data.starter_generating_at)
+      : null,
   };
 }

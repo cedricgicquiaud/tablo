@@ -10,6 +10,7 @@ import { getMyWorkspace } from "@/lib/queries/pinpoint";
 import type { SupabaseProject } from "@/lib/connectors/oauth-supabase-api";
 import { loadDataSource } from "@/lib/ai-engine/load-data-source";
 import { profileConnection } from "@/lib/ai-engine/schema-cache/populate";
+import { generateStarterDashboard } from "@/lib/pinpoint/starter-dashboard";
 
 const SESSION_COOKIE = "pinpoint_oauth_session";
 
@@ -68,10 +69,34 @@ export async function createConnectionFromProject(formData: FormData) {
 
   const connectionId = inserted.id as string;
 
-  // Profiling fire-and-forget (R67, B2) — Next.js 16 `after()` exécute
-  // après la réponse mais dans le request lifecycle. Failure isolée :
-  // la connexion reste utilisable, status='failed' enregistré dans cache.
+  // Phase 18 (R1) : créer un dashboard "Mon premier dashboard" et marquer
+  // `starter_generating_at` immédiatement pour que la page `/app/dashboards/[id]`
+  // affiche l'écran progress dès le redirect.
+  const { data: dashInserted, error: dashErr } = await admin
+    .from("dashboards")
+    .insert({
+      workspace_id: workspace.id,
+      name: `Mon premier dashboard — ${project.name}`,
+      starter_generating_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+  if (dashErr || !dashInserted) {
+    throw new Error(`Insert dashboard: ${dashErr?.message ?? "unknown"}`);
+  }
+  const dashboardId = dashInserted.id as string;
+
+  // Récupère le userId pour audit (R9).
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id ?? "";
+
+  // Profiling + starter dashboard fire-and-forget chaînés dans un SEUL
+  // `after()`. En dev mode Next.js 16, plusieurs `after()` séparés dans
+  // la même Server Action ne sont pas tous exécutés (bug observé Phase 18
+  // smoke testing). Chaîner garantit que le starter démarre après le
+  // profiling, en bénéficiant du schema cache fast-path P17.1.
   after(async () => {
+    // Phase 14.1 (R67, B2) — profiling au connect.
     try {
       const dataSource = await loadDataSource(connectionId);
       const cache = await profileConnection(dataSource);
@@ -83,9 +108,19 @@ export async function createConnectionFromProject(formData: FormData) {
         })
         .eq("id", connectionId);
     } catch (err) {
-      // Best-effort logging : on n'échoue pas la création de connexion
       console.warn(
         `[auto-profiling] échec pour connection ${connectionId}: ${err instanceof Error ? err.message : "unknown"}`,
+      );
+    }
+
+    // Phase 18 (R1) — starter dashboard generation. Le pipeline a aussi
+    // sa propre attente du profiling (R12), redondante mais safe si le
+    // profiling ci-dessus a échoué.
+    try {
+      await generateStarterDashboard(connectionId, dashboardId, workspace.id, userId);
+    } catch (err) {
+      console.warn(
+        `[starter-dashboard] échec pour dashboard ${dashboardId}: ${err instanceof Error ? err.message : "unknown"}`,
       );
     }
   });
@@ -93,5 +128,5 @@ export async function createConnectionFromProject(formData: FormData) {
   // Cleanup : supprimer le cookie session OAuth.
   cookieStore.delete(SESSION_COOKIE);
 
-  redirect("/app");
+  redirect(`/app/dashboards/${dashboardId}`);
 }

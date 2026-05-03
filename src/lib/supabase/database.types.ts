@@ -225,6 +225,8 @@ export type Database = {
           name: string
           palette: string
           radius: string
+          starter_generated_at: string | null
+          starter_generating_at: string | null
           workspace_id: string
         }
         Insert: {
@@ -236,6 +238,8 @@ export type Database = {
           name: string
           palette?: string
           radius?: string
+          starter_generated_at?: string | null
+          starter_generating_at?: string | null
           workspace_id: string
         }
         Update: {
@@ -247,6 +251,8 @@ export type Database = {
           name?: string
           palette?: string
           radius?: string
+          starter_generated_at?: string | null
+          starter_generating_at?: string | null
           workspace_id?: string
         }
         Relationships: [
