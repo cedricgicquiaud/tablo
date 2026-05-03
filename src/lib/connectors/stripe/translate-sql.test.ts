@@ -90,4 +90,21 @@ describe("translateSqlPgToAlasql", () => {
     // La string littérale doit rester intacte
     expect(output).toContain(`'Acme "Foo" Bar'`);
   });
+
+  it("wrap mot-clé alasql utilisé en WHERE / AND / SELECT (smoke 14.3 round 3)", () => {
+    // L'IA Tablo a généré WHERE interval = 'month' — `interval` est mot-clé
+    // alasql et fait throw "Expecting LITERAL ... got EQ".
+    const input = `SELECT plan_nickname FROM stripe_subscriptions WHERE status = 'active' AND interval = 'month' GROUP BY plan_nickname`;
+    const output = translateSqlPgToAlasql(input);
+
+    expect(output).toContain("`interval`");
+    expect(output).toContain("'month'"); // string preservée
+  });
+
+  it("strip le `;` final (smoke 14.3 round 3)", () => {
+    const input = `SELECT * FROM stripe_customers;`;
+    const output = translateSqlPgToAlasql(input);
+
+    expect(output).not.toMatch(/;\s*$/);
+  });
 });

@@ -28,21 +28,29 @@
  * Liste pragmatique basée sur les bugs observés en smoke + SPIKE-LOG.
  * À étendre si nouveaux faux-positifs.
  */
-// Mots-clés réservés alasql vérifiés au spike (cf SPIKE-LOG R13). Liste
-// volontairement courte — chaque entrée est associée à un cas de parse
-// error reproductible. À étendre uniquement quand un bug le motive.
+// Mots-clés réservés alasql vérifiés en smoke + spike. Wrappés en backticks
+// partout où ils apparaissent comme identifier (alias, colonne, ORDER/GROUP/
+// WHERE/SELECT). À étendre quand un nouveau parse error reproductible le
+// motive.
+//
+// Important : `order` n'est PAS dans la liste — il déclenche un wrap sur
+// `ORDER BY` qui casse la SQL. Les vraies utilisations de `order` comme
+// identifier (rare) restent un faux-positif assumé.
+//
+// `count` est dans la liste mais le translator évite explicitement le cas
+// function-call `count(*)` via le lookahead `(?!\s*\()`.
 const ALASQL_KEYWORDS_AS_IDENT = [
-  "value", // smoke 14.3 round 2 : "AS value" → parse error
-  "count", // bug spike R13 : "ORDER BY count" → parse error
-  "order",
+  "value", // smoke 14.3 round 2 : `AS value` → parse error
+  "count", // spike R13 : `ORDER BY count` → parse error (mais pas count(*))
+  "interval", // smoke 14.3 round 3 : `WHERE interval = 'month'` → parse error
   "key",
 ];
 
 export function translateSqlPgToAlasql(sql: string): string {
-  // 1. Tokenizer 3 états (default / single-quote string / double-quote ident)
-  //    pour ne PAS toucher aux strings simple-quotes contenant des `"`.
-  //    Audit verifier 14.3 — bloquant : ancien `replace` regex naïf cassait
-  //    `WHERE name = 'A "B" C'` en `WHERE name = 'A `B` C'`.
+  // 1. Tokenizer 3 états : default / single-quote string / double-quote ident /
+  //    backtick (pour ne pas double-wrap si déjà escapé). Le translator copie
+  //    verbatim les strings simple-quote (audit verifier — bloquant 14.3) et
+  //    réécrit les identifiants Postgres `"foo"` en backticks alasql.
   let out = "";
   let i = 0;
   while (i < sql.length) {
@@ -50,7 +58,7 @@ export function translateSqlPgToAlasql(sql: string): string {
 
     if (ch === "'") {
       // string simple-quote : copier verbatim jusqu'au prochain `'` non échappé.
-      // Postgres double-quote `''` à l'intérieur d'une string = échappement.
+      // Postgres `''` à l'intérieur d'une string = échappement.
       out += "'";
       i++;
       while (i < sql.length) {
@@ -72,9 +80,8 @@ export function translateSqlPgToAlasql(sql: string): string {
 
     if (ch === '"') {
       // identifier double-quote Postgres → backtick alasql.
-      // Postgres double-quote `""` à l'intérieur = échappement (rare mais valide).
       let ident = "";
-      i++; // skip opening "
+      i++;
       while (i < sql.length) {
         if (sql[i] === '"' && sql[i + 1] === '"') {
           ident += '"';
@@ -92,20 +99,47 @@ export function translateSqlPgToAlasql(sql: string): string {
       continue;
     }
 
+    if (ch === "`") {
+      // déjà backtick : copier verbatim
+      out += "`";
+      i++;
+      while (i < sql.length) {
+        if (sql[i] === "`") {
+          out += "`";
+          i++;
+          break;
+        }
+        out += sql[i];
+        i++;
+      }
+      continue;
+    }
+
     out += ch;
     i++;
   }
 
-  // 2. Wrap les mots-clés alasql utilisés comme alias `AS xxx` ou
-  //    référencés en `ORDER BY xxx` / `GROUP BY xxx`. Sans regard
-  //    arrière, on wrap tous les `AS <keyword>` et `(ORDER|GROUP) BY <keyword>`.
+  // 2. Wrap les mots-clés alasql utilisés comme identifier dans le code
+  //    hors-strings. Le wrap est systématique (peu importe la position :
+  //    SELECT, WHERE, AND, GROUP BY, ORDER BY, alias…) — un faux-positif
+  //    sur un mot-clé légitime (ex `INTERVAL '1 day'` Postgres) reste
+  //    théorique car l'IA Tablo génère SQL standard sans constructions
+  //    Postgres-specific.
+  //
+  //    Important : on ne touche pas aux strings (déjà préservées au passage 1)
+  //    ni aux identifiers déjà entre backticks (le regex `\bxxx\b` ne match
+  //    pas xxx précédé/suivi de `).
   for (const kw of ALASQL_KEYWORDS_AS_IDENT) {
-    const aliasRe = new RegExp(`\\b(AS\\s+)${kw}\\b`, "gi");
-    out = out.replace(aliasRe, `$1\`${kw}\``);
-
-    const orderByRe = new RegExp(`\\b((?:ORDER|GROUP)\\s+BY\\s+)${kw}\\b`, "gi");
-    out = out.replace(orderByRe, `$1\`${kw}\``);
+    // Match `kw` en word-boundary, sauf :
+    // - précédé d'un backtick (déjà escapé) → `(^|[^\`])`
+    // - suivi d'un backtick (déjà escapé) → `(?!\`)`
+    // - suivi de `(` (function call comme count(*)) → `(?!\s*\()`
+    const re = new RegExp(`(^|[^\`])\\b${kw}\\b(?!\`)(?!\\s*\\()`, "gi");
+    out = out.replace(re, `$1\`${kw}\``);
   }
+
+  // 3. Strip le `;` final éventuel (alasql refuse `;` à la fin d'une query).
+  out = out.replace(/;\s*$/, "");
 
   return out;
 }
