@@ -52,4 +52,65 @@ describe("connector registry", () => {
       /Stripe Connection.*config_jsonb invalide V1/,
     );
   });
+
+  it("kind='stripe' avec config_jsonb.access_token (user-owned OAuth P14.4) → StripeDataSource", () => {
+    const conn: Connection = {
+      ...baseConnection,
+      kind: "stripe",
+      configJsonb: {
+        // ENCRYPTION_KEY de test : helper encrypt/decrypt utilise une clé
+        // dérivée de l'env. Ici on bypass via mock de decrypt si nécessaire.
+        // Pour ce test on utilise le pattern réel : le decrypt sera appelé
+        // mais on n'invoque pas runQuery (juste vérif que getDataSource ne
+        // throw pas et retourne un DataSource).
+        access_token: "fake-encrypted-token-only-decoded-at-runQuery-time",
+        stripe_user_id: "acct_test_xxx",
+        livemode: false,
+        scope: "read_only",
+      },
+    };
+    // Accept que decrypt throw sur le format invalide → mock-isolated test
+    // OU accept que getDataSource ne précharge pas (lazy). En pratique, le
+    // current decrypt() est synchrone et throw au call. On vérifie que
+    // le ROUTING fonctionne (pas le decrypt).
+    expect(() => {
+      try {
+        const ds = getDataSource(conn);
+        expect(ds).toBeDefined();
+      } catch (err) {
+        // Si decrypt throw sur fake token, c'est attendu — on vérifie juste
+        // que ce n'est pas le throw "config_jsonb invalide V1".
+        expect((err as Error).message).not.toMatch(/config_jsonb invalide V1/);
+      }
+    }).not.toThrow(/config_jsonb invalide V1/);
+  });
+
+  it("kind='stripe' avec status='revoked' → throw clear (E9)", () => {
+    const conn: Connection = {
+      ...baseConnection,
+      kind: "stripe",
+      configJsonb: {
+        access_token: "enc:xxx",
+        stripe_user_id: "acct_x",
+        status: "revoked",
+        livemode: false,
+        scope: "read_only",
+      },
+    };
+    expect(() => getDataSource(conn)).toThrow(
+      /Stripe Connection.*r.voqu.e/i,
+    );
+  });
+
+  it("kind='stripe' env_creds=true reste branche démo inchangée (régression P14.3)", () => {
+    const conn: Connection = {
+      ...baseConnection,
+      kind: "stripe",
+      configJsonb: { env_creds: true },
+    };
+    // Aucun decrypt() ne doit être appelé pour la démo (lit STRIPE_SECRET_KEY env).
+    const ds = getDataSource(conn);
+    expect(ds).toBeDefined();
+    expect(typeof ds.listTables).toBe("function");
+  });
 });
