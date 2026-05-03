@@ -91,4 +91,51 @@ describe("SupabaseOAuthDataSource", () => {
     const ds = makeDS();
     await expect(ds.runQuery("SELECT 1")).rejects.toThrow(/401|unauthorized/i);
   });
+
+  // Phase 14.1.1 — retry exponentiel sur 429 (rate limit Supabase Management API)
+  describe("retry sur 429 ThrottlerException", () => {
+    it("429 puis 200 → retry une fois et retourne le résultat (1 retry)", async () => {
+      fetchMock
+        .mockResolvedValueOnce(ok({ message: "ThrottlerException: Too Many Requests" }, 429))
+        .mockResolvedValueOnce(ok([{ n: 42 }]));
+      const ds = makeDS();
+      const rows = await ds.runQuery("SELECT 42 AS n", { retryDelaysMs: [0] });
+      expect(rows).toEqual([{ n: 42 }]);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it("429 × 3 puis 200 → retry 3 fois et retourne le résultat", async () => {
+      fetchMock
+        .mockResolvedValueOnce(ok({ message: "ThrottlerException" }, 429))
+        .mockResolvedValueOnce(ok({ message: "ThrottlerException" }, 429))
+        .mockResolvedValueOnce(ok({ message: "ThrottlerException" }, 429))
+        .mockResolvedValueOnce(ok([{ ok: true }]));
+      const ds = makeDS();
+      const rows = await ds.runQuery("SELECT 1", { retryDelaysMs: [0, 0, 0] });
+      expect(rows).toEqual([{ ok: true }]);
+      expect(fetchMock).toHaveBeenCalledTimes(4);
+    });
+
+    it("429 × 4 (au-delà du cap) → throw avec message clair", async () => {
+      // Factory pour produire une nouvelle Response à chaque appel
+      // (Response.text() consume le body, on ne peut pas réutiliser la même).
+      fetchMock.mockImplementation(async () =>
+        ok({ message: "ThrottlerException" }, 429),
+      );
+      const ds = makeDS();
+      await expect(
+        ds.runQuery("SELECT 1", { retryDelaysMs: [0, 0, 0] }),
+      ).rejects.toThrow(/429|throttler/i);
+      expect(fetchMock).toHaveBeenCalledTimes(4); // 1 initial + 3 retries
+    });
+
+    it("non-429 (401) → pas de retry, throw immédiat", async () => {
+      fetchMock.mockResolvedValueOnce(ok({ error: "unauthorized" }, 401));
+      const ds = makeDS();
+      await expect(
+        ds.runQuery("SELECT 1", { retryDelaysMs: [0, 0, 0] }),
+      ).rejects.toThrow(/401|unauthorized/i);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  });
 });

@@ -38,33 +38,68 @@ export type SupabaseOAuthDataSourceOpts = {
   getAccessToken: () => Promise<string>;
 };
 
+/** Délais de retry par défaut sur 429 (backoff exponentiel : 1s, 2s, 4s). */
+const DEFAULT_RETRY_DELAYS_MS = [1000, 2000, 4000];
+
+export type RetryOpts = {
+  /**
+   * Délais entre les retries en cas de 429 (rate limit Supabase Management API).
+   * Default : `[1000, 2000, 4000]` → 3 retries avec backoff exponentiel.
+   * Le test peut passer `[0, 0, 0]` pour ne pas ralentir la suite vitest.
+   */
+  retryDelaysMs?: number[];
+};
+
 export class SupabaseOAuthDataSource implements DataSource {
   constructor(private opts: SupabaseOAuthDataSourceOpts) {}
 
-  private async post(query: string): Promise<QueryRow[]> {
+  /**
+   * POST avec retry exponentiel sur 429 (Phase 14.1.1).
+   *
+   * Supabase Management API a un rate limit (~60 req/min sur certains endpoints).
+   * En cas de 429, on retry avec sleep selon `retryDelaysMs`. Les autres erreurs
+   * HTTP (401, 500, etc.) sont propagées immédiatement sans retry.
+   */
+  private async post(query: string, retry: RetryOpts = {}): Promise<QueryRow[]> {
+    const delays = retry.retryDelaysMs ?? DEFAULT_RETRY_DELAYS_MS;
     const accessToken = await this.opts.getAccessToken();
-    const res = await fetch(QUERY_ENDPOINT(this.opts.projectRef), {
+    const url = QUERY_ENDPOINT(this.opts.projectRef);
+    const init = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({ query }),
-    });
-    if (!res.ok) {
+    };
+
+    let lastErrText = "";
+    // 1 initial + delays.length retries (au plus).
+    for (let attempt = 0; attempt <= delays.length; attempt++) {
+      const res = await fetch(url, init);
+      if (res.ok) {
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          throw new Error("Management API: réponse inattendue (non-array)");
+        }
+        return data as QueryRow[];
+      }
       const text = await res.text();
-      throw new Error(`Supabase Management API ${res.status}: ${text}`);
+      // Seul 429 déclenche un retry. Toute autre erreur → throw immédiat.
+      if (res.status !== 429) {
+        throw new Error(`Supabase Management API ${res.status}: ${text}`);
+      }
+      lastErrText = text;
+      // Si on n'a plus de retry disponible, on stop la boucle.
+      if (attempt >= delays.length) break;
+      await new Promise((r) => setTimeout(r, delays[attempt]));
     }
-    const data = await res.json();
-    if (!Array.isArray(data)) {
-      throw new Error("Management API: réponse inattendue (non-array)");
-    }
-    return data as QueryRow[];
+    throw new Error(`Supabase Management API 429: ${lastErrText}`);
   }
 
-  async runQuery(sql: string): Promise<QueryRow[]> {
+  async runQuery(sql: string, retry?: RetryOpts): Promise<QueryRow[]> {
     validateReadOnlySql(sql);
-    return this.post(sql);
+    return this.post(sql, retry);
   }
 
   async listTables(): Promise<TableInfo[]> {
