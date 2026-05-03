@@ -66,7 +66,9 @@ async function main() {
       getStripeClient,
     });
 
-    // Cold query : 1ère SELECT — déclenche fetch Stripe paginé + alasql
+    // Cold query : 1ère SELECT — déclenche fetch Stripe paginé + alasql.
+    // Avec le lazy-fetch per-table (option B 14.3), seule stripe_subscriptions
+    // est fetchée. Représentatif d'un prompt user typique single-table.
     const coldStart = performance.now();
     await ds.runQuery(
       `SELECT plan_nickname, COUNT(*) AS n FROM stripe_subscriptions GROUP BY plan_nickname`,
@@ -74,10 +76,11 @@ async function main() {
     const coldElapsed = performance.now() - coldStart;
     coldLatencies.push(coldElapsed);
 
-    // Warm queries : cache chaud — alasql in-memory uniquement
+    // Warm queries : cache chaud sur la MÊME table — alasql in-memory.
+    // (Une query sur une autre table ferait un cold fetch separé avec lazy.)
     for (let j = 0; j < WARM_RUNS_PER_COLD; j++) {
       const warmStart = performance.now();
-      await ds.runQuery(`SELECT COUNT(*) AS n FROM stripe_customers`);
+      await ds.runQuery(`SELECT COUNT(*) AS n FROM stripe_subscriptions`);
       warmLatencies.push(performance.now() - warmStart);
     }
 

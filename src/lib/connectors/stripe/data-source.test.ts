@@ -151,8 +151,8 @@ beforeEach(() => {
 /*                                  Tests                                     */
 /* -------------------------------------------------------------------------- */
 
-describe("StripeDataSource — listTables (R1)", () => {
-  it("retourne 4 tables hardcodées avec rowCount (R1)", async () => {
+describe("StripeDataSource — listTables (R1, lazy)", () => {
+  it("retourne 4 tables hardcodées (rowCount=0 avant fetch) (R1)", async () => {
     const mock = makeMockStripe({
       customers: [customer("cus_1"), customer("cus_2")],
       subscriptions: [subscription("sub_1", "cus_1")],
@@ -166,15 +166,34 @@ describe("StripeDataSource — listTables (R1)", () => {
 
     const tables = await ds.listTables();
 
+    // listTables est lazy : pas de fetch implicite, rowCount=0 tant qu'aucune
+    // table n'a été inspectée ni interrogée. Garde les 4 noms hardcodés.
     expect(tables).toEqual([
-      { name: "stripe_customers", rowCount: 2 },
-      { name: "stripe_subscriptions", rowCount: 1 },
-      { name: "stripe_invoices", rowCount: 1 },
-      { name: "stripe_charges", rowCount: 3 },
+      { name: "stripe_customers", rowCount: 0 },
+      { name: "stripe_subscriptions", rowCount: 0 },
+      { name: "stripe_invoices", rowCount: 0 },
+      { name: "stripe_charges", rowCount: 0 },
     ]);
   });
 
-  it("propage erreur claire si customers.list throw (E2 auth invalide)", async () => {
+  it("rowCount accurate après inspectTable (R1)", async () => {
+    const mock = makeMockStripe({
+      customers: [customer("cus_1"), customer("cus_2")],
+    });
+    const ds = new StripeDataSource({
+      connectionId: "test_conn_1b",
+      getStripeClient: () => mock as unknown as Stripe,
+    });
+
+    await ds.inspectTable("stripe_customers");
+    const tables = await ds.listTables();
+
+    expect(tables.find((t) => t.name === "stripe_customers")?.rowCount).toBe(2);
+    // Les autres tables non-inspectées restent à 0 (lazy)
+    expect(tables.find((t) => t.name === "stripe_subscriptions")?.rowCount).toBe(0);
+  });
+
+  it("propage erreur claire via inspectTable si customers.list throw (E2 auth invalide)", async () => {
     const authErr = Object.assign(new Error("Authentication failed"), {
       type: "StripeAuthenticationError",
       statusCode: 401,
@@ -189,7 +208,9 @@ describe("StripeDataSource — listTables (R1)", () => {
       getStripeClient: () => mock as unknown as Stripe,
     });
 
-    await expect(ds.listTables()).rejects.toThrow(/Stripe DataSource/);
+    await expect(ds.inspectTable("stripe_customers")).rejects.toThrow(
+      /Stripe DataSource/,
+    );
   });
 });
 
@@ -484,7 +505,9 @@ describe("StripeDataSource — erreurs Stripe API (E1 E2 E6 E9)", () => {
       },
     });
 
-    await expect(ds.listTables()).rejects.toThrow(
+    // listTables est lazy → ne throw pas. inspectTable / runQuery déclenchent
+    // bien la lecture env et propagent l'erreur claire.
+    await expect(ds.inspectTable("stripe_customers")).rejects.toThrow(
       /Stripe DataSource.*STRIPE_SECRET_KEY/,
     );
   });

@@ -125,19 +125,48 @@ const SCHEMAS: Record<TableName, ColumnInfo[]> = {
 /*                              Cache types                                   */
 /* -------------------------------------------------------------------------- */
 
-type CacheEntry = {
+type TableCacheEntry = {
   fetchedAt: number;
-  tables: Record<TableName, StripeRow[]>;
-  truncatedTables: string[];
+  rows: StripeRow[];
+  truncated: boolean;
 };
 
-const cacheByConnection = new Map<string, CacheEntry>();
-const inflightByConnection = new Map<string, Promise<CacheEntry>>();
+// Cache à 2 niveaux : par connection × par table virtuelle.
+// Permet le lazy-fetch per-table — `runQuery` ne fetch que les tables
+// référencées dans la SQL au lieu de tout charger d'un coup.
+const cacheByConnection = new Map<string, Map<TableName, TableCacheEntry>>();
+const inflightByConnection = new Map<string, Map<TableName, Promise<TableCacheEntry>>>();
 
 /** Test escape hatch (R6 + R14 — reset caches entre tests). */
 export function __resetStripeCacheForTests(): void {
   cacheByConnection.clear();
   inflightByConnection.clear();
+}
+
+/* -------------------------------------------------------------------------- */
+/*                          Détection tables référencées                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Extrait les noms de tables virtuelles Stripe référencées dans le SQL.
+ * Heuristic : recherche `stripe_<table_name>` (avec ou sans backticks /
+ * double-quotes). Renvoie un sous-ensemble de TABLE_NAMES.
+ *
+ * Pour les SQL d'agent IA réalistes (SELECT/JOIN/GROUP BY), tous les noms
+ * de table sont précédés de `FROM` ou `JOIN`. Mais en cas d'usage exotique
+ * (subquery, CTE), on peut récupérer un superset — ce n'est pas grave car
+ * fetch en plus = pas de bug, juste un peu plus de latence évitable.
+ */
+function detectReferencedTables(sql: string): TableName[] {
+  const detected = new Set<TableName>();
+  for (const name of TABLE_NAMES) {
+    // word-boundary match insensible à la casse, peu importe les
+    // backticks/double-quotes/qualifiers `db.table` autour.
+    if (new RegExp(`\\b${name}\\b`, "i").test(sql)) {
+      detected.add(name);
+    }
+  }
+  return Array.from(detected);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -155,17 +184,21 @@ export class StripeDataSource implements DataSource {
   constructor(private deps: StripeDataSourceDeps) {}
 
   async listTables(): Promise<TableInfo[]> {
-    const cache = await this.ensureCache();
+    // Lazy : on retourne les 4 noms hardcodés. Le rowCount est lu depuis
+    // le cache si déjà fetché, sinon 0 (l'agent IA peut toujours déclencher
+    // un fetch via inspectTable / runQuery). Évite de charger les 4 tables
+    // juste pour afficher des compteurs.
+    const cached = cacheByConnection.get(this.deps.connectionId);
     return TABLE_NAMES.map((name) => ({
       name,
-      rowCount: cache.tables[name].length,
+      rowCount: cached?.get(name)?.rows.length ?? 0,
     }));
   }
 
   async inspectTable(name: string): Promise<TableDetail | null> {
     if (!isTableName(name)) return null;
-    const cache = await this.ensureCache();
-    const samples = cache.tables[name].slice(0, 3) as unknown as Record<
+    const entry = await this.ensureTableCache(name);
+    const samples = entry.rows.slice(0, 3) as unknown as Record<
       string,
       unknown
     >[];
@@ -178,13 +211,21 @@ export class StripeDataSource implements DataSource {
 
   async runQuery(sql: string): Promise<QueryRow[]> {
     validateReadOnlySql(sql);
-    const cache = await this.ensureCache();
+
+    // Lazy-fetch : on ne fetch que les tables réellement référencées dans le SQL.
+    // Pour "MRR par plan" → fetch que stripe_subscriptions (~1.5s) au lieu
+    // des 4 tables (~5s). Audit verifier 14.3 — perf optim option B.
+    const referenced = detectReferencedTables(sql);
+    const tablesToFetch = referenced.length > 0 ? referenced : TABLE_NAMES;
+    const entries = await Promise.all(
+      tablesToFetch.map((name) => this.ensureTableCache(name)),
+    );
 
     // Database alasql isolée par appel : évite la fuite cross-tenant via
     // le singleton `alasql.tables` global (audit verifier 14.3 — bloquant).
     const db = new alasql.Database();
-    for (const name of TABLE_NAMES) {
-      db.tables[name] = { data: cache.tables[name] };
+    for (let i = 0; i < tablesToFetch.length; i++) {
+      db.tables[tablesToFetch[i]] = { data: entries[i].rows };
     }
 
     const translated = translateSqlPgToAlasql(sql);
@@ -197,31 +238,42 @@ export class StripeDataSource implements DataSource {
 
   /* --------------------------- Cache + coalescing -------------------------- */
 
-  private async ensureCache(): Promise<CacheEntry> {
+  private async ensureTableCache(name: TableName): Promise<TableCacheEntry> {
     const id = this.deps.connectionId;
 
     // 1. Cache hit valide ?
-    const existing = cacheByConnection.get(id);
+    const connCache = cacheByConnection.get(id);
+    const existing = connCache?.get(name);
     if (existing && Date.now() - existing.fetchedAt <= CACHE_TTL_MS) {
       return existing;
     }
 
-    // 2. Fetch déjà en cours (coalescing R14) ?
-    const inflight = inflightByConnection.get(id);
+    // 2. Fetch déjà en cours (coalescing R14, par-table) ?
+    let connInflight = inflightByConnection.get(id);
+    if (!connInflight) {
+      connInflight = new Map();
+      inflightByConnection.set(id, connInflight);
+    }
+    const inflight = connInflight.get(name);
     if (inflight) return inflight;
 
-    // 3. Lance un nouveau fetch et stocke la promise pour coalescing
-    const promise = this.fetchAll().finally(() => {
-      inflightByConnection.delete(id);
+    // 3. Lance un nouveau fetch table-spécifique
+    const promise = this.fetchTable(name).finally(() => {
+      connInflight!.delete(name);
     });
-    inflightByConnection.set(id, promise);
+    connInflight.set(name, promise);
 
     const fresh = await promise;
-    cacheByConnection.set(id, fresh);
+    let store = cacheByConnection.get(id);
+    if (!store) {
+      store = new Map();
+      cacheByConnection.set(id, store);
+    }
+    store.set(name, fresh);
     return fresh;
   }
 
-  private async fetchAll(): Promise<CacheEntry> {
+  private async fetchTable(name: TableName): Promise<TableCacheEntry> {
     let stripe: Stripe;
     try {
       stripe = this.deps.getStripeClient();
@@ -230,23 +282,51 @@ export class StripeDataSource implements DataSource {
     }
 
     const truncatedTables: string[] = [];
+    let rows: StripeRow[];
 
-    const [customers, subs, invoices, charges] = await Promise.all([
-      this.fetchPaginated("stripe_customers", () => stripe.customers, truncatedTables),
-      this.fetchPaginated("stripe_subscriptions", () => stripe.subscriptions, truncatedTables),
-      this.fetchPaginated("stripe_invoices", () => stripe.invoices, truncatedTables),
-      this.fetchPaginated("stripe_charges", () => stripe.charges, truncatedTables),
-    ]);
+    switch (name) {
+      case "stripe_customers": {
+        const raw = await this.fetchPaginated<Stripe.Customer>(
+          name,
+          () => stripe.customers,
+          truncatedTables,
+        );
+        rows = raw.map(flattenStripeCustomer);
+        break;
+      }
+      case "stripe_subscriptions": {
+        const raw = await this.fetchPaginated<Stripe.Subscription>(
+          name,
+          () => stripe.subscriptions,
+          truncatedTables,
+        );
+        rows = raw.map(flattenStripeSubscription);
+        break;
+      }
+      case "stripe_invoices": {
+        const raw = await this.fetchPaginated<Stripe.Invoice>(
+          name,
+          () => stripe.invoices,
+          truncatedTables,
+        );
+        rows = raw.map(flattenStripeInvoice);
+        break;
+      }
+      case "stripe_charges": {
+        const raw = await this.fetchPaginated<Stripe.Charge>(
+          name,
+          () => stripe.charges,
+          truncatedTables,
+        );
+        rows = raw.map(flattenStripeCharge);
+        break;
+      }
+    }
 
     return {
       fetchedAt: Date.now(),
-      tables: {
-        stripe_customers: customers.map((c) => flattenStripeCustomer(c as Stripe.Customer)),
-        stripe_subscriptions: subs.map((s) => flattenStripeSubscription(s as Stripe.Subscription)),
-        stripe_invoices: invoices.map((i) => flattenStripeInvoice(i as Stripe.Invoice)),
-        stripe_charges: charges.map((c) => flattenStripeCharge(c as Stripe.Charge)),
-      },
-      truncatedTables,
+      rows,
+      truncated: truncatedTables.includes(name),
     };
   }
 
