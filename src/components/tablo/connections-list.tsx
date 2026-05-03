@@ -1,8 +1,10 @@
 import type { ConnectionSummary } from "@/lib/queries/tablo";
+import { ConnectSourceTrigger } from "./connect-source-trigger";
 
 const KIND_LABELS: Record<string, string> = {
   demo: "Demo",
   supabase: "Supabase",
+  stripe: "Stripe",
   postgres: "Postgres",
   csv: "CSV",
 };
@@ -32,13 +34,9 @@ export function ConnectionsList({ connections }: { connections: ConnectionSummar
           </span>
         </div>
       ))}
-      <a
-        href="/oauth/supabase/start"
-        className="mt-1 flex items-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] text-[var(--ink-3)] hover:bg-[var(--surface-3)] hover:text-[var(--ink)]"
-      >
-        <span aria-hidden>+</span>
-        <span>Connecter Supabase</span>
-      </a>
+      <div className="mt-1">
+        <ConnectSourceTrigger />
+      </div>
     </div>
   );
 }
