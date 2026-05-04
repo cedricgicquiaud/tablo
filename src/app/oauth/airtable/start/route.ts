@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
+import { buildAirtableAuthorizeUrl } from "@/lib/connectors/airtable/oauth";
 import {
-  buildAuthorizeUrl,
   generateChallenge,
   generateVerifier,
 } from "@/lib/connectors/oauth-pkce";
@@ -14,14 +14,21 @@ const COOKIE_OPTS = {
   maxAge: 600,
 };
 
-const SCOPES = ["database:write", "projects:read", "rest:read"];
+const SCOPES = [
+  "data.records:read",
+  "schema.bases:read",
+  "user.email:read",
+];
 
 export async function GET() {
-  const clientId = process.env.SUPABASE_OAUTH_CLIENT_ID;
-  const redirectUri = process.env.SUPABASE_OAUTH_REDIRECT_URI;
+  const clientId = process.env.AIRTABLE_OAUTH_CLIENT_ID;
+  const redirectUri = process.env.AIRTABLE_OAUTH_REDIRECT_URI;
   if (!clientId || !redirectUri) {
     return NextResponse.json(
-      { error: "OAuth Supabase non configuré : SUPABASE_OAUTH_CLIENT_ID et SUPABASE_OAUTH_REDIRECT_URI requis." },
+      {
+        error:
+          "OAuth Airtable non configuré : AIRTABLE_OAUTH_CLIENT_ID et AIRTABLE_OAUTH_REDIRECT_URI requis.",
+      },
       { status: 500 },
     );
   }
@@ -29,8 +36,7 @@ export async function GET() {
   const verifier = generateVerifier();
   const state = randomUUID();
   const challenge = generateChallenge(verifier);
-  const url = buildAuthorizeUrl({
-    authorizeUrl: "https://api.supabase.com/v1/oauth/authorize",
+  const url = buildAirtableAuthorizeUrl({
     clientId,
     redirectUri,
     state,
@@ -39,7 +45,7 @@ export async function GET() {
   });
 
   const res = NextResponse.redirect(url, 307);
-  res.cookies.set("tablo_oauth_verifier", verifier, COOKIE_OPTS);
-  res.cookies.set("tablo_oauth_state", state, COOKIE_OPTS);
+  res.cookies.set("tablo_airtable_oauth_verifier", verifier, COOKIE_OPTS);
+  res.cookies.set("tablo_airtable_oauth_state", state, COOKIE_OPTS);
   return res;
 }

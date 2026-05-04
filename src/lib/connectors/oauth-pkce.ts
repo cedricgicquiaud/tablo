@@ -1,7 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
 
-const AUTHORIZE_ENDPOINT = "https://api.supabase.com/v1/oauth/authorize";
-
 function base64url(buf: Buffer): string {
   return buf.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
@@ -18,6 +16,8 @@ export function generateChallenge(verifier: string): string {
 }
 
 export type AuthorizeUrlParams = {
+  /** URL de l'endpoint d'autorisation OAuth du provider (ex Supabase, Airtable). */
+  authorizeUrl: string;
   clientId: string;
   redirectUri: string;
   state: string;
@@ -26,7 +26,7 @@ export type AuthorizeUrlParams = {
 };
 
 export function buildAuthorizeUrl(params: AuthorizeUrlParams): string {
-  const u = new URL(AUTHORIZE_ENDPOINT);
+  const u = new URL(params.authorizeUrl);
   u.searchParams.set("client_id", params.clientId);
   u.searchParams.set("response_type", "code");
   u.searchParams.set("redirect_uri", params.redirectUri);

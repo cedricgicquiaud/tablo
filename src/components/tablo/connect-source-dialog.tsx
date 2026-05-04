@@ -42,7 +42,7 @@ type ProviderEntry = {
 const PROVIDERS: ProviderEntry[] = [
   { slug: "supabase",     name: "Supabase",      status: "active", href: "/oauth/supabase/start", icon: { kind: "simple-icon", data: siSupabase } },
   { slug: "stripe",       name: "Stripe",        status: "active", href: "/oauth/stripe/start",   icon: { kind: "simple-icon", data: siStripe } },
-  { slug: "airtable",     name: "Airtable",      status: "soon",   icon: { kind: "simple-icon", data: siAirtable } },
+  { slug: "airtable",     name: "Airtable",      status: "active", href: "/oauth/airtable/start", icon: { kind: "simple-icon", data: siAirtable } },
   { slug: "googlesheets", name: "Google Sheets", status: "soon",   icon: { kind: "simple-icon", data: siGooglesheets } },
   { slug: "excel",        name: "Excel",         status: "soon",   icon: { kind: "lucide", component: FileSpreadsheet } },
   { slug: "hubspot",      name: "HubSpot",       status: "soon",   icon: { kind: "simple-icon", data: siHubspot } },

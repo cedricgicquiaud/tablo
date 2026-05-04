@@ -1,15 +1,19 @@
 /**
- * Tests `runProfileConnectionAfterOAuth` — Phase 14.4 EVALUATE finding #6.
+ * Tests `runProfileConnectionAfterOAuth` — cross-providers.
  *
- * Couvre R13 fire-and-forget : decrypt → buildDataSource → profileConnection
+ * Couvre fire-and-forget : decrypt → buildDataSource → profileConnection
  * → saveSchemaCache. Et le swallow d'erreurs (logWarn) qui garantit que le
  * `after()` côté route ne bubble jamais une exception.
+ *
+ * Promu de `stripe/profile-after-oauth.test.ts` (P14.4) en P14.5 :
+ * + 1 test "provider-agnostic" qui valide que la signature accepte
+ *   n'importe quel DataSource (Stripe, Airtable, futurs).
  */
 
 import { describe, expect, it, vi } from "vitest";
 import { runProfileConnectionAfterOAuth } from "./profile-after-oauth";
-import type { SchemaCacheEntry } from "../../ai-engine/schema-cache/types";
-import type { DataSource } from "../types";
+import type { SchemaCacheEntry } from "../ai-engine/schema-cache/types";
+import type { DataSource } from "./types";
 
 const fakeCache: SchemaCacheEntry = {
   version: 1,
@@ -24,9 +28,9 @@ const fakeDataSource: DataSource = {
   runQuery: vi.fn(),
 };
 
-describe("runProfileConnectionAfterOAuth", () => {
+describe("runProfileConnectionAfterOAuth (cross-providers)", () => {
   it("happy path — decrypt + build + profile + save dans l'ordre", async () => {
-    const decryptToken = vi.fn().mockReturnValue("rk_test_xxx");
+    const decryptToken = vi.fn().mockReturnValue("token_decrypted");
     const buildDataSource = vi.fn().mockReturnValue(fakeDataSource);
     const profileConnection = vi.fn().mockResolvedValue(fakeCache);
     const saveSchemaCache = vi.fn().mockResolvedValue(undefined);
@@ -37,7 +41,7 @@ describe("runProfileConnectionAfterOAuth", () => {
     );
 
     expect(decryptToken).toHaveBeenCalledWith("enc:xxx");
-    expect(buildDataSource).toHaveBeenCalledWith("rk_test_xxx");
+    expect(buildDataSource).toHaveBeenCalledWith("token_decrypted");
     expect(profileConnection).toHaveBeenCalledWith(fakeDataSource);
     expect(saveSchemaCache).toHaveBeenCalledWith("conn_1", fakeCache);
   });
@@ -64,9 +68,9 @@ describe("runProfileConnectionAfterOAuth", () => {
   });
 
   it("profileConnection throw → logWarn + saveSchemaCache pas appelé", async () => {
-    const decryptToken = vi.fn().mockReturnValue("rk_test_xxx");
+    const decryptToken = vi.fn().mockReturnValue("token_decrypted");
     const buildDataSource = vi.fn().mockReturnValue(fakeDataSource);
-    const profileConnection = vi.fn().mockRejectedValue(new Error("Stripe down"));
+    const profileConnection = vi.fn().mockRejectedValue(new Error("Provider API down"));
     const saveSchemaCache = vi.fn();
     const logWarn = vi.fn();
 
@@ -80,7 +84,7 @@ describe("runProfileConnectionAfterOAuth", () => {
   });
 
   it("saveSchemaCache throw → logWarn (DB error swallow)", async () => {
-    const decryptToken = vi.fn().mockReturnValue("rk_test_xxx");
+    const decryptToken = vi.fn().mockReturnValue("token_decrypted");
     const buildDataSource = vi.fn().mockReturnValue(fakeDataSource);
     const profileConnection = vi.fn().mockResolvedValue(fakeCache);
     const saveSchemaCache = vi.fn().mockRejectedValue(new Error("DB down"));
@@ -92,5 +96,32 @@ describe("runProfileConnectionAfterOAuth", () => {
     );
 
     expect(logWarn).toHaveBeenCalledTimes(1);
+  });
+
+  it("provider-agnostic — signature accepte n'importe quel DataSource (Stripe, Airtable, futurs)", async () => {
+    // Test simulant 2 providers différents (Stripe + Airtable) qui réutilisent
+    // exactement la même signature pure logic.
+    const stripeDataSource: DataSource = { listTables: vi.fn(), inspectTable: vi.fn(), runQuery: vi.fn() };
+    const airtableDataSource: DataSource = { listTables: vi.fn(), inspectTable: vi.fn(), runQuery: vi.fn() };
+
+    const callTimeline: string[] = [];
+    const decryptToken = (s: string) => s.replace("enc:", "");
+    const profileConnection = async (ds: DataSource): Promise<SchemaCacheEntry> => {
+      callTimeline.push(ds === stripeDataSource ? "stripe" : "airtable");
+      return fakeCache;
+    };
+    const saveSchemaCache = vi.fn().mockResolvedValue(undefined);
+
+    await runProfileConnectionAfterOAuth(
+      { connectionId: "conn_stripe", encryptedAccessToken: "enc:tok_stripe" },
+      { decryptToken, buildDataSource: () => stripeDataSource, profileConnection, saveSchemaCache },
+    );
+    await runProfileConnectionAfterOAuth(
+      { connectionId: "conn_airtable", encryptedAccessToken: "enc:tok_airtable" },
+      { decryptToken, buildDataSource: () => airtableDataSource, profileConnection, saveSchemaCache },
+    );
+
+    expect(callTimeline).toEqual(["stripe", "airtable"]);
+    expect(saveSchemaCache).toHaveBeenCalledTimes(2);
   });
 });

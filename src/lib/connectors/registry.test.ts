@@ -113,4 +113,52 @@ describe("connector registry", () => {
     expect(ds).toBeDefined();
     expect(typeof ds.listTables).toBe("function");
   });
+
+  it("R20 — kind='airtable' avec config valide → AirtableDataSource (Phase 14.5)", () => {
+    const conn: Connection = {
+      ...baseConnection,
+      kind: "airtable",
+      configJsonb: {
+        base_id: "appA",
+        base_name: "Demo Base",
+        access_token: "enc:xxx",
+        refresh_token: "enc:rt",
+        expires_at: Date.now() + 600_000,
+        scope: "data.records:read",
+        status: "active",
+      },
+    };
+    const ds = getDataSource(conn);
+    expect(typeof ds.listTables).toBe("function");
+    expect(typeof ds.inspectTable).toBe("function");
+    expect(typeof ds.runQuery).toBe("function");
+  });
+
+  it("R20 + E9 — kind='airtable' avec status='expired' → throw 'Reconnecter'", () => {
+    const conn: Connection = {
+      ...baseConnection,
+      kind: "airtable",
+      configJsonb: {
+        base_id: "appA",
+        base_name: "Demo Base",
+        access_token: "enc:xxx",
+        refresh_token: "enc:rt",
+        expires_at: Date.now() - 1000,
+        scope: "data.records:read",
+        status: "expired",
+      },
+    };
+    expect(() => getDataSource(conn)).toThrow(/Reconnecter Airtable/i);
+  });
+
+  it("kind='airtable' sans base_id → throw clair", () => {
+    const conn: Connection = {
+      ...baseConnection,
+      kind: "airtable",
+      configJsonb: {
+        access_token: "enc:xxx",
+      },
+    };
+    expect(() => getDataSource(conn)).toThrow(/base_id/i);
+  });
 });
