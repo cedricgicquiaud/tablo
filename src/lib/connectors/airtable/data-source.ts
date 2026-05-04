@@ -136,11 +136,29 @@ export class AirtableDataSource implements DataSource {
       nullable: true,
     }));
 
+    // Smoke S7 finding : sans samples, l'AI inspecte puis bail (end_turn).
+    // Fetch 3 records pour donner du contexte (1 API call extra acceptable).
+    // Si fetch fail, fallback samples=[] (l'inspectTable doit pas casser).
+    let samples: Record<string, unknown>[] = [];
+    try {
+      const token = await this.getAccessToken();
+      const result = await this.fetchTableRecordsFn({
+        accessToken: token,
+        baseId: this.baseId,
+        tableName: target.name,
+        maxRecords: 3,
+      });
+      samples = result.records.map((r) =>
+        flattenAirtableRecord(r),
+      ) as Record<string, unknown>[];
+    } catch {
+      // swallow : inspectTable doit toujours retourner les columns
+    }
+
     return {
       name: target.name,
       columns,
-      // V1 : pas de samples (couvert par B.4 quand on fetch records SQL).
-      samples: [],
+      samples,
     };
   }
 
