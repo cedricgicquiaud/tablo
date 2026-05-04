@@ -148,30 +148,40 @@ export async function GET(request: NextRequest) {
   }
 
   // R13 — profiling fire-and-forget (cf REVIEW P14.3 bug schema_cache vide)
+  // Pure logic extraite dans `profile-after-oauth.ts` (cf finding EVALUATE
+  // verifier P14.4 #6 : route handler restait responsable d'orchestration
+  // d'imports dynamiques + decrypt + DataSource + persist DB sur 25 lignes).
   after(async () => {
-    try {
-      const { StripeDataSource } = await import("@/lib/connectors/stripe/data-source");
-      const { decrypt } = await import("@/lib/crypto/encryption");
-      const Stripe = (await import("stripe")).default;
-      const accessToken = decrypt(config_jsonb.access_token);
-      const dataSource = new StripeDataSource({
-        connectionId,
-        getStripeClient: () => new Stripe(accessToken),
-      });
-      const cache = await profileConnection(dataSource);
-      await admin
-        .from("connections")
-        .update({
-          schema_cache_jsonb: cache,
-          schema_synced_at: cache.synced_at,
-        })
-        .eq("id", connectionId);
-    } catch (err) {
-      console.warn(
-        `[OAuth Stripe callback] profileConnection failed for ${connectionId}:`,
-        err,
-      );
-    }
+    const { StripeDataSource } = await import(
+      "@/lib/connectors/stripe/data-source"
+    );
+    const { decrypt } = await import("@/lib/crypto/encryption");
+    const Stripe = (await import("stripe")).default;
+    const { runProfileConnectionAfterOAuth } = await import(
+      "@/lib/connectors/stripe/profile-after-oauth"
+    );
+
+    await runProfileConnectionAfterOAuth(
+      { connectionId, encryptedAccessToken: config_jsonb.access_token },
+      {
+        decryptToken: decrypt,
+        buildDataSource: (token) =>
+          new StripeDataSource({
+            connectionId,
+            getStripeClient: () => new Stripe(token),
+          }),
+        profileConnection,
+        saveSchemaCache: async (id, cache) => {
+          await admin
+            .from("connections")
+            .update({
+              schema_cache_jsonb: cache,
+              schema_synced_at: cache.synced_at,
+            })
+            .eq("id", id);
+        },
+      },
+    );
   });
 
   // Redirect avec succès
