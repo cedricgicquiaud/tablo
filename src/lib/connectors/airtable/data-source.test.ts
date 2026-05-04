@@ -11,6 +11,10 @@ import {
   __resetAirtableCacheForTests,
 } from "./data-source";
 import type { AirtableTableSchema } from "./meta-api";
+import type {
+  FetchTableRecordsOpts,
+  FetchTableRecordsResult,
+} from "./records-api";
 
 const fakeSchema: AirtableTableSchema[] = [
   {
@@ -45,13 +49,16 @@ function makeDataSource(
     baseId: string;
   }> = {},
 ) {
+  const fetchSchema =
+    override.fetchTablesSchemaFn ?? vi.fn().mockResolvedValue(fakeSchema);
   return new AirtableDataSource({
     connectionId: override.connectionId ?? "conn_1",
     baseId: override.baseId ?? "appA",
     getAccessToken: override.getAccessToken ?? (async () => "tok"),
-    fetchTablesSchemaFn:
-      override.fetchTablesSchemaFn ??
-      vi.fn().mockResolvedValue(fakeSchema),
+    fetchTablesSchemaFn: fetchSchema as unknown as (
+      accessToken: string,
+      baseId: string,
+    ) => Promise<typeof fakeSchema>,
   });
 }
 
@@ -170,5 +177,185 @@ describe("AirtableDataSource.inspectTable (R15, E13)", () => {
     const ds = makeDataSource();
     const detail = await ds.inspectTable("Customers");
     expect(detail!.samples).toEqual([]);
+  });
+});
+
+describe("AirtableDataSource.runQuery (R16, R18, RNF5, E12, E13, E14)", () => {
+  beforeEach(() => {
+    __resetAirtableCacheForTests();
+    vi.restoreAllMocks();
+  });
+
+  function makeDataSourceWithRecords(
+    records: Record<string, Array<{ id: string; createdTime: string; fields: Record<string, unknown> }>>,
+    opts: {
+      fetchRecordsFn?: ReturnType<typeof vi.fn>;
+      connectionId?: string;
+      baseId?: string;
+    } = {},
+  ) {
+    const fetchRecordsFn =
+      opts.fetchRecordsFn ??
+      vi.fn().mockImplementation(async ({ tableName }: { tableName: string }) => ({
+        records: records[tableName] ?? [],
+        truncated: false,
+      }));
+    return new AirtableDataSource({
+      connectionId: opts.connectionId ?? "conn_1",
+      baseId: opts.baseId ?? "appA",
+      getAccessToken: async () => "tok",
+      fetchTablesSchemaFn: vi
+        .fn()
+        .mockResolvedValue(fakeSchema) as unknown as (
+        a: string,
+        b: string,
+      ) => Promise<typeof fakeSchema>,
+      fetchTableRecordsFn: fetchRecordsFn as unknown as (
+        opts: FetchTableRecordsOpts,
+      ) => Promise<FetchTableRecordsResult>,
+    });
+  }
+
+  it("R16 — SELECT * FROM Customers → fetch records + flatten + alasql + return rows", async () => {
+    const ds = makeDataSourceWithRecords({
+      Customers: [
+        {
+          id: "rec1",
+          createdTime: "2024-01-15T10:00:00.000Z",
+          fields: { Name: "Alice", Email: "a@x.com" },
+        },
+        {
+          id: "rec2",
+          createdTime: "2024-01-15T11:00:00.000Z",
+          fields: { Name: "Bob", Email: "b@x.com" },
+        },
+      ],
+    });
+
+    const rows = await ds.runQuery("SELECT * FROM Customers");
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ id: "rec1", name: "Alice", email: "a@x.com" });
+    expect(rows[1]).toMatchObject({ id: "rec2", name: "Bob" });
+  });
+
+  it("RNF5 + E12 — INSERT/UPDATE/DELETE → throw avant fetch", async () => {
+    const fetchMock = vi.fn();
+    const ds = makeDataSourceWithRecords(
+      {},
+      { fetchRecordsFn: fetchMock },
+    );
+
+    await expect(ds.runQuery("INSERT INTO Customers VALUES (1)")).rejects.toThrow();
+    await expect(ds.runQuery("UPDATE Customers SET x=1")).rejects.toThrow();
+    await expect(ds.runQuery("DELETE FROM Customers")).rejects.toThrow();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("R16 — SELECT avec aggregate (COUNT) sur table existante → exécute via alasql", async () => {
+    const ds = makeDataSourceWithRecords({
+      Customers: [
+        { id: "r1", createdTime: "t", fields: { Name: "A" } },
+        { id: "r2", createdTime: "t", fields: { Name: "B" } },
+        { id: "r3", createdTime: "t", fields: { Name: "C" } },
+      ],
+    });
+
+    // Note : alias `total` est un keyword alasql → on utilise `cnt`. Si l'AI
+    // génère `total`, B.5 translator devra wrapper dans [total]. Smoke
+    // testing détectera (couvert).
+    const rows = await ds.runQuery(
+      "SELECT COUNT(*) AS cnt FROM Customers",
+    );
+    expect(rows).toHaveLength(1);
+    expect((rows[0] as { cnt: number }).cnt).toBe(3);
+  });
+
+  it("Lazy-fetch — SELECT que de Customers → fetch que Customers (pas Orders)", async () => {
+    const fetchRecordsFn = vi
+      .fn()
+      .mockImplementation(async ({ tableName }: { tableName: string }) => ({
+        records:
+          tableName === "Customers"
+            ? [{ id: "r1", createdTime: "t", fields: { Name: "A" } }]
+            : [],
+        truncated: false,
+      }));
+    const ds = makeDataSourceWithRecords({}, { fetchRecordsFn });
+
+    await ds.runQuery("SELECT * FROM Customers");
+
+    // Une seule call, pour Customers
+    expect(fetchRecordsFn).toHaveBeenCalledTimes(1);
+    const call = (fetchRecordsFn.mock.calls[0] as [{ tableName: string }])[0];
+    expect(call.tableName).toBe("Customers");
+  });
+
+  it("R17 — 2 calls successifs même SQL → 1 seul fetch (cache TTL 5min)", async () => {
+    const fetchRecordsFn = vi
+      .fn()
+      .mockImplementation(async () => ({
+        records: [{ id: "r1", createdTime: "t", fields: { Name: "A" } }],
+        truncated: false,
+      }));
+    const ds = makeDataSourceWithRecords({}, { fetchRecordsFn });
+
+    await ds.runQuery("SELECT * FROM Customers");
+    await ds.runQuery("SELECT name FROM Customers");
+
+    // Une seule fetch (table cache hit au 2nd run)
+    expect(fetchRecordsFn).toHaveBeenCalledTimes(1);
+  });
+
+  it("R18 — 2 calls parallèles même table → 1 seul fetch via mutex", async () => {
+    let count = 0;
+    const fetchRecordsFn = vi.fn().mockImplementation(async () => {
+      count++;
+      // Délai pour permettre la 2nde call avant resolve
+      await new Promise((r) => setTimeout(r, 10));
+      return {
+        records: [{ id: `r${count}`, createdTime: "t", fields: {} }],
+        truncated: false,
+      };
+    });
+    const ds = makeDataSourceWithRecords({}, { fetchRecordsFn });
+
+    const [r1, r2] = await Promise.all([
+      ds.runQuery("SELECT * FROM Customers"),
+      ds.runQuery("SELECT * FROM Customers"),
+    ]);
+
+    expect(fetchRecordsFn).toHaveBeenCalledTimes(1);
+    expect(r1).toEqual(r2);
+  });
+
+  it("E13 — table inexistante dans schema → throw clair", async () => {
+    const ds = makeDataSourceWithRecords({});
+
+    await expect(
+      ds.runQuery("SELECT * FROM NonExistentTable"),
+    ).rejects.toThrow(/non.+trouvée|n[' ]existe pas|inexistante/i);
+  });
+
+  it("Cross-tenant isolation — connections distinctes ne partagent pas le cache (P14.3 audit verifier)", async () => {
+    const ds1 = makeDataSourceWithRecords(
+      {
+        Customers: [{ id: "r1", createdTime: "t", fields: { Name: "Tenant1" } }],
+      },
+      { connectionId: "conn_tenant1" },
+    );
+    const ds2 = makeDataSourceWithRecords(
+      {
+        Customers: [{ id: "r99", createdTime: "t", fields: { Name: "Tenant2" } }],
+      },
+      { connectionId: "conn_tenant2" },
+    );
+
+    const rows1 = await ds1.runQuery("SELECT name FROM Customers");
+    const rows2 = await ds2.runQuery("SELECT name FROM Customers");
+
+    expect((rows1[0] as { name: string }).name).toBe("Tenant1");
+    expect((rows2[0] as { name: string }).name).toBe("Tenant2");
   });
 });

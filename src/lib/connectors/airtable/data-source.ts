@@ -14,6 +14,7 @@
  * `getAccessToken` + `fetchTablesSchemaFn` overridables pour testabilité.
  */
 
+import alasql from "alasql";
 import type {
   ColumnInfo,
   DataSource,
@@ -21,12 +22,22 @@ import type {
   TableDetail,
   TableInfo,
 } from "../types";
+import { validateReadOnlySql } from "../sql-validation";
+import { translateSqlPgToAlasql } from "../stripe/translate-sql";
 import { airtableFieldToSqlType } from "./field-type-mapping";
 import {
   fetchTablesSchema as defaultFetchTablesSchema,
   type AirtableTableSchema,
 } from "./meta-api";
-import { normalizeColumnName } from "./flatten";
+import {
+  fetchTableRecords as defaultFetchTableRecords,
+  type FetchTableRecordsOpts,
+  type FetchTableRecordsResult,
+} from "./records-api";
+import { flattenAirtableRecord, normalizeColumnName } from "./flatten";
+
+const RECORDS_CACHE_TTL_MS = 5 * 60 * 1000;
+const MAX_RECORDS_PER_TABLE = 1000;
 
 const SCHEMA_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -39,10 +50,21 @@ type SchemaCacheEntry = {
 const schemaCache = new Map<string, SchemaCacheEntry>();
 const schemaInflight = new Map<string, Promise<AirtableTableSchema[]>>();
 
+type RecordsCacheEntry = {
+  rows: QueryRow[];
+  truncated: boolean;
+  fetchedAt: number;
+};
+// Records cache keyé par `baseId::tableName`.
+const recordsCache = new Map<string, RecordsCacheEntry>();
+const recordsInflight = new Map<string, Promise<RecordsCacheEntry>>();
+
 /** Helper test-only pour reset le cache entre tests. */
 export function __resetAirtableCacheForTests() {
   schemaCache.clear();
   schemaInflight.clear();
+  recordsCache.clear();
+  recordsInflight.clear();
 }
 
 export type AirtableDataSourceOpts = {
@@ -55,6 +77,10 @@ export type AirtableDataSourceOpts = {
     accessToken: string,
     baseId: string,
   ) => Promise<AirtableTableSchema[]>;
+  /** Override pour tests. Default = `records-api.fetchTableRecords`. */
+  fetchTableRecordsFn?: (
+    opts: FetchTableRecordsOpts,
+  ) => Promise<FetchTableRecordsResult>;
 };
 
 export class AirtableDataSource implements DataSource {
@@ -65,6 +91,9 @@ export class AirtableDataSource implements DataSource {
     accessToken: string,
     baseId: string,
   ) => Promise<AirtableTableSchema[]>;
+  private readonly fetchTableRecordsFn: (
+    opts: FetchTableRecordsOpts,
+  ) => Promise<FetchTableRecordsResult>;
 
   constructor(opts: AirtableDataSourceOpts) {
     this.connectionId = opts.connectionId;
@@ -72,6 +101,8 @@ export class AirtableDataSource implements DataSource {
     this.getAccessToken = opts.getAccessToken;
     this.fetchTablesSchemaFn =
       opts.fetchTablesSchemaFn ?? defaultFetchTablesSchema;
+    this.fetchTableRecordsFn =
+      opts.fetchTableRecordsFn ?? defaultFetchTableRecords;
   }
 
   async listTables(): Promise<TableInfo[]> {
@@ -113,14 +144,51 @@ export class AirtableDataSource implements DataSource {
     };
   }
 
-  async runQuery(_sql: string): Promise<QueryRow[]> {
-    throw new Error("AirtableDataSource.runQuery : not implemented yet (B.4)");
+  async runQuery(sql: string): Promise<QueryRow[]> {
+    // RNF5 + E12 — refuse INSERT/UPDATE/DELETE avant tout fetch
+    validateReadOnlySql(sql);
+
+    const schema = await this.getCachedSchema();
+
+    // Lazy-fetch : extract table names référencées dans le SQL parmi celles
+    // du schema. Pattern P14.3 (option B advisor — bench gain 8x).
+    const referenced = detectReferencedTables(sql, schema);
+    if (referenced.length === 0) {
+      throw new Error(
+        `Table inexistante : aucune des tables du SQL ne correspond au schema Airtable (base ${this.baseId}). Tables disponibles : ${schema.map((t) => t.name).join(", ")}`,
+      );
+    }
+
+    const entries = await Promise.all(
+      referenced.map((name) => this.ensureRecordsCache(name)),
+    );
+
+    // Cross-tenant isolation : new alasql.Database() per call (audit verifier
+    // 14.3 bloquant — évite fuite via singleton alasql.tables global).
+    const db = new alasql.Database();
+    for (let i = 0; i < referenced.length; i++) {
+      db.tables[referenced[i]] = { data: entries[i].rows };
+    }
+
+    const translated = translateSqlPgToAlasql(sql);
+    const rows = db.exec(translated) as unknown[];
+
+    return (rows as Record<string, unknown>[]).map((r) => {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(r)) {
+        out[k] = v === undefined ? null : v;
+      }
+      return out;
+    }) as QueryRow[];
   }
 
   /* ---------- internals ---------- */
 
   private async getCachedSchema(): Promise<AirtableTableSchema[]> {
-    const cacheKey = this.baseId;
+    // Key par connectionId pour isolation cross-tenant (cohérence P14.3
+    // audit verifier bloquant). Si 2 workspaces ont OAuth la même base
+    // physique Airtable, ils ont chacun leur cache + leur token.
+    const cacheKey = this.connectionId;
     const now = Date.now();
     const cached = schemaCache.get(cacheKey);
     if (cached && now - cached.cachedAt < SCHEMA_CACHE_TTL_MS) {
@@ -145,4 +213,70 @@ export class AirtableDataSource implements DataSource {
       schemaInflight.delete(cacheKey);
     }
   }
+
+  private async ensureRecordsCache(
+    tableName: string,
+  ): Promise<RecordsCacheEntry> {
+    // Key par connectionId (pas par baseId) — cross-tenant safety même si
+    // baseId identique (cas rare mais possible : un même base Airtable
+    // partagée à 2 workspaces Tablo via OAuth).
+    const cacheKey = `${this.connectionId}::${tableName}`;
+    const now = Date.now();
+
+    const cached = recordsCache.get(cacheKey);
+    if (cached && now - cached.fetchedAt < RECORDS_CACHE_TTL_MS) {
+      return cached;
+    }
+
+    const inflight = recordsInflight.get(cacheKey);
+    if (inflight) return inflight;
+
+    const promise = (async () => {
+      const token = await this.getAccessToken();
+      const result = await this.fetchTableRecordsFn({
+        accessToken: token,
+        baseId: this.baseId,
+        tableName,
+        maxRecords: MAX_RECORDS_PER_TABLE,
+      });
+      const rows = result.records.map((r) =>
+        flattenAirtableRecord(r),
+      ) as QueryRow[];
+      const entry: RecordsCacheEntry = {
+        rows,
+        truncated: result.truncated,
+        fetchedAt: Date.now(),
+      };
+      recordsCache.set(cacheKey, entry);
+      return entry;
+    })();
+    recordsInflight.set(cacheKey, promise);
+    try {
+      return await promise;
+    } finally {
+      recordsInflight.delete(cacheKey);
+    }
+  }
+}
+
+/**
+ * Détecte les tables Airtable du schema effectivement référencées dans le SQL.
+ * Match insensible à la casse + word-boundary. Si aucune match, on retourne []
+ * → caller throw E13.
+ */
+function detectReferencedTables(
+  sql: string,
+  schema: AirtableTableSchema[],
+): string[] {
+  const detected: string[] = [];
+  for (const table of schema) {
+    // Word-boundary insensible casse. Si table name a des espaces, on doit
+    // matcher la version quotée OU directement le name (selon le SQL généré
+    // par l'AI ; alasql accepte les 2 si on met des "" autour).
+    const escaped = table.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${escaped}\\b`, "i").test(sql)) {
+      detected.push(table.name);
+    }
+  }
+  return detected;
 }
