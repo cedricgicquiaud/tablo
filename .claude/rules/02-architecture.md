@@ -39,7 +39,7 @@ Exemple concret :
 - `src/lib/tablo/starter-pipeline.ts` : `runStarterPipeline(deps: StarterDeps)` — 10 tests TDD avec mocks legers.
 - `src/lib/tablo/starter-dashboard.ts` : Server Action wrapper qui cree les deps Supabase + runAgent + AbortController.
 
-Source : 3 occurrences detectees (P17 utils atomiques, P17.1 schema-prompt + integration runAgent, P18 starter-pipeline + wrapper).
+Source : 3+ occurrences detectees, capitalisees en regle (P17 utils atomiques, P17.1 schema-prompt + integration runAgent, P18 starter-pipeline + wrapper, P14.4 profile-after-oauth, P14.5 = 5 nouvelles occurrences en 1 phase : airtable/oauth, airtable-token-refresh, create-connection-from-airtable-base, airtable/data-source, registry-route. Pattern desormais omnipresent dans le codebase).
 
 ---
 Ce fichier est mis a jour par le workflow FORGE (phases ORIENT et LEARN).
