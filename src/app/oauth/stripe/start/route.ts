@@ -30,7 +30,13 @@ export async function GET() {
     clientId,
     state,
     redirectUri,
-    scopes: ["read_only"],
+    // Stripe bloque `read_only` pour les nouveaux comptes Connect Standard
+    // (réservé aux comptes pré-existants ou via Stripe support). On utilise
+    // `read_write` qui marche par défaut. Notre code ne fait que des reads
+    // (cf StripeDataSource.runQuery `validateReadOnlySql`), donc le surplus
+    // de scope n'est pas exploité côté Tablo.
+    // V2 BACKLOG : downgrade vers read_only après whitelist Stripe support.
+    scopes: ["read_write"],
   });
 
   const res = NextResponse.redirect(url, 307);

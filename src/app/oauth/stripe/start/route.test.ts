@@ -37,9 +37,9 @@ describe("GET /oauth/stripe/start", () => {
 
     expect(res.status).toBe(307); // Next.js redirect default
     const location = res.headers.get("location");
-    expect(location).toContain("https://connect.stripe.com/oauth/v2/authorize");
+    expect(location).toContain("https://connect.stripe.com/oauth/authorize");
     expect(location).toContain("client_id=ca_test_xxxxx");
-    expect(location).toContain("scope=read_only");
+    expect(location).toContain("scope=read_write");
     expect(location).toContain("redirect_uri=");
 
     const cookieHeader = res.headers.get("set-cookie");

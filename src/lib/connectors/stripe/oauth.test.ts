@@ -20,7 +20,7 @@ describe("buildAuthorizeUrl", () => {
       scopes: ["read_only"],
     });
 
-    expect(url).toContain("https://connect.stripe.com/oauth/v2/authorize");
+    expect(url).toContain("https://connect.stripe.com/oauth/authorize");
     expect(url).toContain("response_type=code");
     expect(url).toContain("client_id=ca_test_xxxxx");
     expect(url).toContain("scope=read_only");

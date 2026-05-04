@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
   try {
     tokens = await exchangeAuthorizationCode(code, clientSecret);
   } catch (err) {
+    console.error("[OAuth Stripe callback] token exchange failed:", err);
     if (err instanceof StripeOAuthError && err.code === "application_not_found") {
       return redirectAppErr(request, "oauth_setup");
     }

@@ -2,8 +2,8 @@
  * Helpers OAuth Stripe Connect Standard — Phase 14.4 C2.
  *
  * Pattern : 2 fonctions pures testables sans setup environnement.
- *  - `buildAuthorizeUrl` : construit l'URL `/oauth/v2/authorize` Stripe.
- *  - `exchangeAuthorizationCode` : POST `/oauth/v2/token` pour échanger
+ *  - `buildAuthorizeUrl` : construit l'URL `/oauth/authorize` Stripe.
+ *  - `exchangeAuthorizationCode` : POST `/oauth/token` pour échanger
  *    le `code` contre access_token/refresh_token/stripe_user_id.
  *
  * Erreurs Stripe (`application_not_found`, `invalid_grant`, etc.) wrapées
@@ -12,8 +12,11 @@
 
 import { z } from "zod";
 
-const STRIPE_AUTHORIZE_BASE_URL = "https://connect.stripe.com/oauth/v2/authorize";
-const STRIPE_TOKEN_URL = "https://connect.stripe.com/oauth/v2/token";
+// Connect OAuth Standard utilise `/oauth/authorize` + `/oauth/token` (sans v2).
+// Le `/oauth/v2/...` est l'API Stripe Apps, pas Connect — confusion initiale
+// révélée au smoke test (HTML 404 au lieu de JSON sur /v2/token).
+const STRIPE_AUTHORIZE_BASE_URL = "https://connect.stripe.com/oauth/authorize";
+const STRIPE_TOKEN_URL = "https://connect.stripe.com/oauth/token";
 
 /* -------------------------------------------------------------------------- */
 /*                              Types                                         */
