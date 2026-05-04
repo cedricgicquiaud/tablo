@@ -62,14 +62,25 @@ describe("<ConnectSourceDialog>", () => {
     expect(submit.textContent).toContain("Stripe");
   });
 
-  it("R4/E8 — click sur Airtable (Bientôt) → toast + footer reste disabled (pas de sélection)", async () => {
+  it("R3 (Phase 14.5) — click sur Airtable row → footer link avec href /oauth/airtable/start", async () => {
+    const user = userEvent.setup();
+    render(<ConnectSourceDialog open={true} onOpenChange={() => {}} />);
+
+    await user.click(screen.getByTestId("provider-airtable"));
+
+    const submit = screen.getByTestId("connect-submit");
+    expect(submit.getAttribute("href")).toBe("/oauth/airtable/start");
+    expect(submit.textContent).toContain("Airtable");
+  });
+
+  it("R4/E8 — click sur HubSpot (Bientôt) → toast + footer reste disabled (pas de sélection)", async () => {
     const onOpenChange = vi.fn();
     const user = userEvent.setup();
     render(<ConnectSourceDialog open={true} onOpenChange={onOpenChange} />);
 
-    await user.click(screen.getByTestId("provider-airtable"));
+    await user.click(screen.getByTestId("provider-hubspot"));
 
-    expect(toastMock).toHaveBeenCalledWith(expect.stringContaining("Airtable"));
+    expect(toastMock).toHaveBeenCalledWith(expect.stringContaining("HubSpot"));
     // onOpenChange ne doit PAS avoir été appelé avec false
     const closeCalls = onOpenChange.mock.calls.filter((c) => c[0] === false);
     expect(closeCalls).toHaveLength(0);
@@ -109,8 +120,9 @@ describe("<ConnectSourceDialog>", () => {
 
   it("R2 — fournisseurs Bientôt ont badge 'Bientôt' visible", () => {
     render(<ConnectSourceDialog open={true} onOpenChange={() => {}} />);
-    // 7 fournisseurs Bientôt (Airtable, GSheets, Excel, HubSpot, Salesforce, Notion, Shopify)
+    // 6 fournisseurs Bientôt après Phase 14.5 Airtable active
+    // (GSheets, Excel, HubSpot, Salesforce, Notion, Shopify)
     const badges = screen.getAllByText("Bientôt");
-    expect(badges.length).toBe(7);
+    expect(badges.length).toBe(6);
   });
 });
