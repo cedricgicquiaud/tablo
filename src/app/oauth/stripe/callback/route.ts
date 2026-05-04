@@ -11,10 +11,21 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 const STATE_COOKIE = "tablo_stripe_oauth_state";
 
 function redirectAppErr(request: NextRequest, code: string) {
-  return NextResponse.redirect(
+  // Purge state cookie sur tous les paths d'erreur — finding audit verifier P14.4 :
+  // un cookie state non purgé restait actif TTL 10 min après échec OAuth, ce
+  // qui aurait permis un replay théorique sur une session voisine.
+  const res = NextResponse.redirect(
     new URL(`/app?error=${encodeURIComponent(code)}`, request.url),
     307,
   );
+  res.cookies.delete(STATE_COOKIE);
+  return res;
+}
+
+function jsonErrAndClearState(message: string, status: number) {
+  const res = NextResponse.json({ error: message }, { status });
+  res.cookies.delete(STATE_COOKIE);
+  return res;
 }
 
 export async function GET(request: NextRequest) {
@@ -34,25 +45,16 @@ export async function GET(request: NextRequest) {
   // E3 (+ E10 consolidé) — CSRF state check
   const cookieState = request.cookies.get(STATE_COOKIE)?.value;
   if (!cookieState || !state || cookieState !== state) {
-    return NextResponse.json(
-      { error: "OAuth state mismatch (CSRF)" },
-      { status: 403 },
-    );
+    return jsonErrAndClearState("OAuth state mismatch (CSRF)", 403);
   }
 
   if (!code) {
-    return NextResponse.json(
-      { error: "Missing authorization code" },
-      { status: 400 },
-    );
+    return jsonErrAndClearState("Missing authorization code", 400);
   }
 
   const clientSecret = process.env.STRIPE_SECRET_KEY;
   if (!clientSecret) {
-    return NextResponse.json(
-      { error: "STRIPE_SECRET_KEY not configured" },
-      { status: 500 },
-    );
+    return jsonErrAndClearState("STRIPE_SECRET_KEY not configured", 500);
   }
 
   // E4 + E11 — token exchange
@@ -78,7 +80,7 @@ export async function GET(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    return jsonErrAndClearState("Non authentifié", 401);
   }
 
   const { data: workspaceRow } = await supabase
@@ -88,7 +90,7 @@ export async function GET(request: NextRequest) {
     .single();
 
   if (!workspaceRow) {
-    return NextResponse.json({ error: "Workspace introuvable" }, { status: 404 });
+    return jsonErrAndClearState("Workspace introuvable", 404);
   }
 
   const workspaceId = (workspaceRow as { id: string }).id;
