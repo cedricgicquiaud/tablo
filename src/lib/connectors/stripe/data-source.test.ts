@@ -332,7 +332,7 @@ describe("StripeDataSource — runQuery (R3 R4)", () => {
     expect(adHoc?.sub_id).toBeNull();
   });
 
-  it("E3 — SQL non read-only refusé AVANT fetch", async () => {
+  it("E3 — SQL non read-only refusé AVANT fetch (DELETE)", async () => {
     const customerListFn = vi.fn();
     const mock = makeMockStripe({ customerListFn });
     const ds = new StripeDataSource({
@@ -344,6 +344,38 @@ describe("StripeDataSource — runQuery (R3 R4)", () => {
       ds.runQuery(`DELETE FROM stripe_customers`),
     ).rejects.toThrow();
 
+    expect(customerListFn).not.toHaveBeenCalled();
+  });
+
+  // Anti-régression scope OAuth `read_write` (Phase 14.4 — Stripe bloque
+  // `read_only` pour nouveaux comptes Connect Standard, donc le scope
+  // accordé à la clé OAuth user-owned est techniquement read_write. La
+  // garantie que Tablo n'effectue jamais d'écriture sur le compte connecté
+  // repose uniquement sur ce check côté StripeDataSource.runQuery →
+  // validateReadOnlySql. Ces 2 tests verrouillent cette garantie.
+  it("E3 — SQL non read-only refusé AVANT fetch (INSERT)", async () => {
+    const customerListFn = vi.fn();
+    const mock = makeMockStripe({ customerListFn });
+    const ds = new StripeDataSource({
+      connectionId: "test_conn_9b",
+      getStripeClient: () => mock as unknown as Stripe,
+    });
+    await expect(
+      ds.runQuery(`INSERT INTO stripe_customers (id) VALUES ('cus_x')`),
+    ).rejects.toThrow();
+    expect(customerListFn).not.toHaveBeenCalled();
+  });
+
+  it("E3 — SQL non read-only refusé AVANT fetch (UPDATE)", async () => {
+    const customerListFn = vi.fn();
+    const mock = makeMockStripe({ customerListFn });
+    const ds = new StripeDataSource({
+      connectionId: "test_conn_9c",
+      getStripeClient: () => mock as unknown as Stripe,
+    });
+    await expect(
+      ds.runQuery(`UPDATE stripe_customers SET email = 'x@y.z'`),
+    ).rejects.toThrow();
     expect(customerListFn).not.toHaveBeenCalled();
   });
 

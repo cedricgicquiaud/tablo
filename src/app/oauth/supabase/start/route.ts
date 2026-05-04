@@ -37,7 +37,7 @@ export async function GET() {
     scopes: SCOPES,
   });
 
-  const res = NextResponse.redirect(url, 302);
+  const res = NextResponse.redirect(url, 307);
   res.cookies.set("tablo_oauth_verifier", verifier, COOKIE_OPTS);
   res.cookies.set("tablo_oauth_state", state, COOKIE_OPTS);
   return res;

@@ -1,3 +1,5 @@
+import Stripe from "stripe";
+import { decrypt } from "@/lib/crypto/encryption";
 import { getStripeClient } from "@/lib/stripe/client";
 import { DemoDataSource } from "./demo";
 import { StripeDataSource } from "./stripe/data-source";
@@ -32,20 +34,29 @@ export function getDataSource(connection: Connection): DataSource {
       const config = connection.configJsonb as {
         env_creds?: boolean;
         access_token?: string;
+        status?: string;
       };
-      // V1 (Phase 14.3) : seul `env_creds: true` est supporté → lit
-      // STRIPE_SECRET_KEY de l'env. V2 (Phase 14.4 OAuth) ajoutera la
-      // route avec access_token chiffré.
-      if (config.access_token) {
-        // Fail-fast : V1 ne sait pas consommer un access_token user
-        // (cf audit verifier 14.3). V2 retirera ce throw.
+
+      // E9 — connection révoquée côté Stripe Dashboard
+      if (config.status === "revoked") {
         throw new Error(
-          `Stripe Connection ${connection.id} : access_token présent mais OAuth non implémenté V1 (Phase 14.4)`,
+          `Stripe Connection ${connection.id} révoquée. Reconnecte ton compte via la sidebar.`,
         );
       }
+
+      // V2 — connection user-owned via OAuth Stripe Connect (P14.4)
+      if (config.access_token) {
+        const decrypted = decrypt(config.access_token);
+        return new StripeDataSource({
+          connectionId: connection.id,
+          getStripeClient: () => new Stripe(decrypted),
+        });
+      }
+
+      // V1 — connection démo (sentinel env_creds=true, P14.3)
       if (config.env_creds !== true) {
         throw new Error(
-          `Stripe Connection ${connection.id} config_jsonb invalide V1 (attendu env_creds: true)`,
+          `Stripe Connection ${connection.id} config_jsonb invalide V1 (attendu env_creds: true ou access_token user)`,
         );
       }
       return new StripeDataSource({

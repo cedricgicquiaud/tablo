@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   if (error) {
     return NextResponse.redirect(
       new URL(`/app?oauth_error=${encodeURIComponent(error)}`, request.url),
-      302,
+      307,
     );
   }
 
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
   };
   const ciphertext = encrypt(JSON.stringify(payload));
 
-  const res = NextResponse.redirect(new URL("/onboarding/select-project", request.url), 302);
+  const res = NextResponse.redirect(new URL("/onboarding/select-project", request.url), 307);
   res.cookies.set(SESSION_COOKIE, ciphertext, SESSION_OPTS);
   res.cookies.delete(VERIFIER_COOKIE);
   res.cookies.delete(STATE_COOKIE);

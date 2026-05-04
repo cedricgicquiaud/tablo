@@ -226,3 +226,20 @@ Le template est conçu pour être forké :
 ## Licence
 
 MIT.
+
+## Setup Stripe Connect Platform (Phase 14.4 — OAuth user-owned)
+
+Pour permettre aux users de connecter LEUR compte Stripe via OAuth :
+
+1. Aller sur [dashboard.stripe.com](https://dashboard.stripe.com) en mode **test** (toggle en haut à droite).
+2. **Settings → Connect → Get started → Standard accounts**.
+3. **Platform settings → Branding** : nom Tablo + logo (cosmétique, optionnel).
+4. **Platform settings → Redirect URIs** : ajouter
+   - `http://localhost:3000/oauth/stripe/callback` (dev)
+   - `https://<your-domain>/oauth/stripe/callback` (prod)
+5. **Récup le `client_id`** qui commence par `ca_test_...` → ajouter dans `.env.local` :
+   ```
+   STRIPE_CONNECT_CLIENT_ID=ca_test_xxxxx
+   ```
+
+Le `STRIPE_SECRET_KEY` (sk_test_...) existant est ré-utilisé pour le token exchange — pas besoin d'une nouvelle clé.
