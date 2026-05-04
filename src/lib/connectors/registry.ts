@@ -1,6 +1,8 @@
 import Stripe from "stripe";
 import { decrypt } from "@/lib/crypto/encryption";
 import { getStripeClient } from "@/lib/stripe/client";
+import { AirtableDataSource } from "./airtable/data-source";
+import { getValidAirtableAccessToken } from "./airtable-token-refresh";
 import { DemoDataSource } from "./demo";
 import { StripeDataSource } from "./stripe/data-source";
 import { SupabaseOAuthDataSource } from "./supabase-oauth";
@@ -64,11 +66,34 @@ export function getDataSource(connection: Connection): DataSource {
         getStripeClient,
       });
     }
-    case "airtable":
-      // Wired in C.1 (Phase 14.5).
-      throw new Error(
-        "Connector kind 'airtable' not yet implemented (Phase 14.5 Cycle C.1).",
-      );
+    case "airtable": {
+      const config = connection.configJsonb as {
+        base_id?: string;
+        access_token?: string;
+        status?: string;
+      };
+
+      // E9 — connection révoquée / refresh expiré
+      if (config.status === "expired") {
+        throw new Error(
+          `Airtable Connection ${connection.id} expirée. Reconnecter Airtable depuis la sidebar.`,
+        );
+      }
+
+      if (!config.base_id) {
+        throw new Error(
+          `Airtable Connection ${connection.id} config_jsonb invalide (base_id manquant)`,
+        );
+      }
+
+      return new AirtableDataSource({
+        connectionId: connection.id,
+        baseId: config.base_id,
+        // Refresh-aware : à chaque construction, un access_token frais est
+        // récupéré (refresh transparent si proche expiration).
+        getAccessToken: () => getValidAirtableAccessToken(connection.id),
+      });
+    }
     case "postgres":
     case "csv":
       throw new Error(
