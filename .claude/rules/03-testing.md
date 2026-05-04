@@ -46,6 +46,42 @@ L'ecart entre "tests verts" et "feature qui marche bout-en-bout" est non-trivial
 
 Source : 3 occurrences detectees (P14 OAuth, P15 design, P17 moteur AI).
 
+### Cas particulier : flows OAuth third-party (issu de LEARN P14.4 — 6+ occurrences)
+
+Pour les phases qui implementent un flow OAuth third-party (Supabase, Stripe Connect, future Airtable/HubSpot/Salesforce/etc.) : **smoke-tester le 1er round de bout en bout AVANT d'ecrire les unit tests sur les helpers**. La doc third-party ne reflete pas toujours le comportement reel, et beaucoup d'aspects (scopes acceptes, format endpoint URL, contraintes ajoutees recemment, branding, account auto-generation en mode test) ne sont visibles qu'en exercant le flow.
+
+Frictions Stripe Connect Standard documentees en P14.4 (cf `.workflow/phases/14.4-stripe-oauth-modal-sources/REVIEW.md`) : scope `read_only` refuse, URL `/oauth/v2/token` faux (vrai endpoint = `/oauth/token`), Dashboard UI refondue, comptes test generes a chaque OAuth, comptes connectes vides, branding plateforme.
+
+Pratique : ajouter un `[smoke S1] OAuth start → consent → callback OK` en cycle C1/C2 du PLAN, avant d'ecrire les unit tests sur les helpers OAuth. Si le smoke revele un decalage, ajuster les helpers AVANT d'enclencher le TDD.
+
+## Mocking : `vi.hoisted` pour partager mocks entre `vi.mock` et asserts (issu de LEARN P14.4 — 4 occurrences detectees)
+
+`vi.mock(...)` est hoisted top-level par Vitest, donc impossible de referencer une variable locale `const mockFn = vi.fn()` dedans (`Cannot access 'mockFn' before initialization`). Solution canonique : **declarer les mocks dans `vi.hoisted(...)`** pour qu'ils soient eux aussi hoisted.
+
+```ts
+// Pattern correct
+const { mockFn, otherMock } = vi.hoisted(() => ({
+  mockFn: vi.fn(),
+  otherMock: vi.fn(),
+}));
+
+vi.mock("@/lib/some-module", () => ({
+  someFunc: mockFn,
+}));
+
+import { thingUnderTest } from "./code";
+
+describe("...", () => {
+  it("...", () => {
+    mockFn.mockReturnValue("foo");
+    expect(thingUnderTest()).toBe("foo");
+    expect(mockFn).toHaveBeenCalled();
+  });
+});
+```
+
+Source : 4 occurrences (P14.1 Supabase OAuth tests, P14.4 modale + callback OAuth tests, profile-after-oauth tests).
+
 ## Bench scriptable obligatoire pour phases avec RNF chiffres (issu de LEARN apres 3 occurrences detectees)
 
 Toute phase qui pose des RNF mesurables (latence, cout, throughput, taux de succes) doit produire un script `scripts/bench-<phase>.ts` reproductible. Le bench doit :
