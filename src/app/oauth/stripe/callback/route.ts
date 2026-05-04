@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
     const { decrypt } = await import("@/lib/crypto/encryption");
     const Stripe = (await import("stripe")).default;
     const { runProfileConnectionAfterOAuth } = await import(
-      "@/lib/connectors/stripe/profile-after-oauth"
+      "@/lib/connectors/profile-after-oauth"
     );
 
     await runProfileConnectionAfterOAuth(

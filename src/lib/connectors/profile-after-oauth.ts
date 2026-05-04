@@ -1,19 +1,22 @@
 /**
- * Pure logic + DI : profile une connection Stripe user-owned post-OAuth
- * et persiste le schema cache. Appelé via `after()` côté route callback.
+ * Pure logic + DI : profile une connection user-owned post-OAuth et persiste
+ * le schema cache. Appelé via `after()` côté route callback de chaque provider
+ * (Stripe P14.4, Airtable P14.5, futurs providers).
  *
  * Pattern issu de `.claude/rules/02-architecture.md` : sépare la pure logic
  * (testable avec deps mockés légers) du wrapper Server qui assemble les
- * vraies deps (Supabase admin, decrypt, Stripe SDK).
+ * vraies deps (Supabase admin, decrypt, SDK provider).
+ *
+ * Promu de `stripe/profile-after-oauth.ts` (P14.4) en cross-providers (P14.5).
  */
 
-import type { SchemaCacheEntry } from "../../ai-engine/schema-cache/types";
-import type { DataSource } from "../types";
+import type { SchemaCacheEntry } from "../ai-engine/schema-cache/types";
+import type { DataSource } from "./types";
 
 export type ProfileAfterOAuthDeps = {
   /** Decrypt l'access_token depuis sa version chiffrée AES-256-GCM stockée en DB. */
   decryptToken: (encrypted: string) => string;
-  /** Construit un DataSource Stripe à partir d'un access_token décrypté. */
+  /** Construit un DataSource provider-spécifique à partir d'un access_token décrypté. */
   buildDataSource: (accessToken: string) => DataSource;
   /** Profile la DataSource (list_tables + inspect_table → schema cache). */
   profileConnection: (ds: DataSource) => Promise<SchemaCacheEntry>;
@@ -45,7 +48,7 @@ export async function runProfileConnectionAfterOAuth(
     await deps.saveSchemaCache(connectionId, cache);
   } catch (err) {
     logWarn(
-      `[OAuth Stripe callback] profileConnection failed for ${connectionId}:`,
+      `[profile-after-oauth] profileConnection failed for ${connectionId}:`,
       err,
     );
   }
