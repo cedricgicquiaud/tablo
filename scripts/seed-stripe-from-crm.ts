@@ -24,6 +24,7 @@ import { Client as PgClient } from "pg";
 import type Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe/client";
 import { companySizeToPlan, type StripePlan } from "@/lib/stripe/plan-mapping";
+import { withRetry as sharedWithRetry } from "@/lib/utils/retry";
 
 const SEED_TAG = "v1";
 
@@ -50,33 +51,12 @@ type Prices = {
 type Stats = { created: number; skipped: number; failed: number };
 
 /**
- * Retry exponentiel sur 429 / RateLimitError Stripe.
- * Réutilise pattern P14.1.1 pour Supabase Management API.
+ * Wrapper local autour du helper partagé `withRetry` (P14.3 P0) qui
+ * accepte le pattern positionnel `(label, fn)` historique du seed.
+ * Le helper partagé gère la détection 429 (`statusCode` ou message).
  */
-async function withRetry<T>(
-  label: string,
-  fn: () => Promise<T>,
-  delaysMs: number[] = [1000, 2000, 4000],
-): Promise<T> {
-  let lastErr: unknown = null;
-  for (let attempt = 0; attempt <= delaysMs.length; attempt++) {
-    try {
-      return await fn();
-    } catch (err) {
-      lastErr = err;
-      const status =
-        typeof err === "object" && err !== null && "statusCode" in err
-          ? (err as { statusCode?: number }).statusCode
-          : undefined;
-      if (status !== 429) throw err;
-      if (attempt >= delaysMs.length) break;
-      console.warn(
-        `[${label}] 429 rate limit, retry dans ${delaysMs[attempt]}ms (${attempt + 1}/${delaysMs.length})`,
-      );
-      await new Promise((r) => setTimeout(r, delaysMs[attempt]));
-    }
-  }
-  throw lastErr;
+function withRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  return sharedWithRetry(fn, { label });
 }
 
 /**

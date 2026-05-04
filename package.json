@@ -16,7 +16,8 @@
     "db:types": "mkdir -p src/lib/supabase && supabase gen types typescript --local > src/lib/supabase/database.types.ts",
     "db:seed": "bun run scripts/seed.ts",
     "db:fresh": "supabase db reset && bun run db:seed",
-    "bench:ai": "bun run scripts/bench-ai-engine.ts"
+    "bench:ai": "bun run scripts/bench-ai-engine.ts",
+    "bench:stripe-datasource": "bun run scripts/bench-stripe-datasource.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.1",
@@ -24,6 +25,7 @@
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.104.1",
     "@types/react-grid-layout": "^2.1.0",
+    "alasql": "^4.17.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.11.0",

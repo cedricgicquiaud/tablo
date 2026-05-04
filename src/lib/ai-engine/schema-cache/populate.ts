@@ -162,12 +162,15 @@ async function fetchTopValues(
   }
 
   // 2. Top N values
-  const topSql = `SELECT ${safeCol} as value, count(*) as count FROM ${safeTable} WHERE ${safeCol} IS NOT NULL GROUP BY ${safeCol} ORDER BY count DESC LIMIT ${TOP_VALUES_LIMIT}`;
+  // NB : alias `val` / `cnt` (pas `value` / `count`) pour rester cross-dialect.
+  // alasql considère `value` et `count` comme mots-clés réservés (cf SPIKE-LOG
+  // R13 Phase 14.3) — Postgres et MySQL acceptent les deux conventions.
+  const topSql = `SELECT ${safeCol} as val, count(*) as cnt FROM ${safeTable} WHERE ${safeCol} IS NOT NULL GROUP BY ${safeCol} ORDER BY cnt DESC LIMIT ${TOP_VALUES_LIMIT}`;
   const topRows = await dataSource.runQuery(topSql);
 
   const values: TopValue[] = topRows.map((row) => ({
-    value: row.value as TopValue["value"],
-    count: Number(row.count),
+    value: row.val as TopValue["value"],
+    count: Number(row.cnt),
   }));
 
   return { distinctCount, values };
