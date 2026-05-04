@@ -243,3 +243,25 @@ Pour permettre aux users de connecter LEUR compte Stripe via OAuth :
    ```
 
 Le `STRIPE_SECRET_KEY` (sk_test_...) existant est ré-utilisé pour le token exchange — pas besoin d'une nouvelle clé.
+
+## Setup Airtable OAuth (Phase 14.5 — connecter une base Airtable user-owned)
+
+Pour permettre aux users de connecter LEUR base Airtable via OAuth (PKCE) :
+
+1. Aller sur [airtable.com/create/oauth](https://airtable.com/create/oauth) → **Register integration**.
+2. **Integration name** : `Tablo` (ou ce que tu veux).
+3. **Redirect URI** :
+   - `http://localhost:3000/oauth/airtable/callback` (dev)
+   - `https://<your-domain>/oauth/airtable/callback` (prod)
+4. **Scopes** : `data.records:read schema.bases:read user.email:read`.
+5. **Récup `Client ID` + `Client Secret`** (Secret affiché 1 seule fois — bien le copier) → ajouter dans `.env.local` :
+   ```
+   AIRTABLE_OAUTH_CLIENT_ID=...
+   AIRTABLE_OAUTH_CLIENT_SECRET=...
+   AIRTABLE_OAUTH_REDIRECT_URI=http://localhost:3000/oauth/airtable/callback
+   ```
+
+Notes :
+- Airtable OAuth utilise PKCE (code_challenge + verifier) en plus du client_secret côté Tablo.
+- `access_token` expire en 60 min ; le `refresh_token` est **single-use** (rotation à chaque refresh).
+- Limite 20 tokens actifs par (user, integration) — Tablo idempotent par `(workspace_id, kind, base_id)` pour éviter d'en accumuler.
