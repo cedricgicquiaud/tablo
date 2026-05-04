@@ -1,8 +1,12 @@
 /**
  * Tests `<ConnectSourceDialog>` — Phase 14.4 C1.
  *
- * Couvre R2-R5 + E8 : grille 3×3 logos, click implémenté → href OAuth,
- * click "Bientôt" → toast, modale fermable.
+ * Pattern select-then-submit (cf `/onboarding/select-project`) :
+ * R2 : 9 fournisseurs rendus dans l'ordre acté.
+ * R3 : click sur Supabase/Stripe row → footer link "Connecter <Name>" avec href OAuth.
+ * R4/E8 : click "Bientôt" → toast + pas de sélection.
+ * R5 : Annuler ferme la modale.
+ * R6 : footer initialement disabled (rien sélectionné).
  */
 
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
@@ -27,58 +31,60 @@ describe("<ConnectSourceDialog>", () => {
     cleanup();
   });
 
-  it("R2 — render 9 cartes dans l'ordre acté quand open=true", () => {
+  it("R2 — render 9 lignes dans l'ordre acté quand open=true", () => {
     render(<ConnectSourceDialog open={true} onOpenChange={() => {}} />);
 
-    const cards = screen.getAllByRole("link", { hidden: false }).concat(
-      screen.getAllByRole("button").filter((b) => b.dataset.testid?.startsWith("provider-")),
-    );
-
-    // 9 fournisseurs (2 actifs links + 7 disabled buttons)
     const providers = ["Supabase", "Stripe", "Airtable", "Google Sheets", "Excel", "HubSpot", "Salesforce", "Notion", "Shopify"];
     for (const name of providers) {
       expect(screen.getByText(name)).toBeDefined();
     }
   });
 
-  it("R3 — Supabase carte est un lien vers /oauth/supabase/start", () => {
+  it("R3 — click sur Supabase row → footer link 'Connecter Supabase' avec href /oauth/supabase/start", async () => {
+    const user = userEvent.setup();
     render(<ConnectSourceDialog open={true} onOpenChange={() => {}} />);
-    const supabaseLink = screen.getByRole("link", { name: /Supabase/i });
-    expect(supabaseLink.getAttribute("href")).toBe("/oauth/supabase/start");
+
+    await user.click(screen.getByTestId("provider-supabase"));
+
+    const submit = screen.getByTestId("connect-submit");
+    expect(submit.getAttribute("href")).toBe("/oauth/supabase/start");
+    expect(submit.textContent).toContain("Supabase");
   });
 
-  it("R3 — Stripe carte est un lien vers /oauth/stripe/start", () => {
+  it("R3 — click sur Stripe row → footer link avec href /oauth/stripe/start", async () => {
+    const user = userEvent.setup();
     render(<ConnectSourceDialog open={true} onOpenChange={() => {}} />);
-    const stripeLink = screen.getByRole("link", { name: /Stripe/i });
-    expect(stripeLink.getAttribute("href")).toBe("/oauth/stripe/start");
+
+    await user.click(screen.getByTestId("provider-stripe"));
+
+    const submit = screen.getByTestId("connect-submit");
+    expect(submit.getAttribute("href")).toBe("/oauth/stripe/start");
+    expect(submit.textContent).toContain("Stripe");
   });
 
-  it("R4/E8 — click sur Airtable (Bientôt) → toast + modale reste ouverte", async () => {
+  it("R4/E8 — click sur Airtable (Bientôt) → toast + footer reste disabled (pas de sélection)", async () => {
     const onOpenChange = vi.fn();
     const user = userEvent.setup();
     render(<ConnectSourceDialog open={true} onOpenChange={onOpenChange} />);
 
-    const airtableBtn = screen.getByRole("button", { name: /Airtable/i });
-    await user.click(airtableBtn);
+    await user.click(screen.getByTestId("provider-airtable"));
 
-    expect(toastMock).toHaveBeenCalledWith(
-      expect.stringContaining("Airtable"),
-    );
+    expect(toastMock).toHaveBeenCalledWith(expect.stringContaining("Airtable"));
     // onOpenChange ne doit PAS avoir été appelé avec false
     const closeCalls = onOpenChange.mock.calls.filter((c) => c[0] === false);
     expect(closeCalls).toHaveLength(0);
+    // Footer reste disabled (pas de connect-submit, juste connect-submit-disabled)
+    expect(screen.queryByTestId("connect-submit")).toBeNull();
+    expect(screen.getByTestId("connect-submit-disabled")).toBeDefined();
   });
 
   it("R4/E8 — click sur Salesforce (Bientôt, fallback Lucide Cloud) → toast", async () => {
     const user = userEvent.setup();
     render(<ConnectSourceDialog open={true} onOpenChange={() => {}} />);
 
-    const salesforceBtn = screen.getByRole("button", { name: /Salesforce/i });
-    await user.click(salesforceBtn);
+    await user.click(screen.getByTestId("provider-salesforce"));
 
-    expect(toastMock).toHaveBeenCalledWith(
-      expect.stringContaining("Salesforce"),
-    );
+    expect(toastMock).toHaveBeenCalledWith(expect.stringContaining("Salesforce"));
   });
 
   it("R5 — bouton Annuler appelle onOpenChange avec false comme 1er arg", async () => {
@@ -95,9 +101,14 @@ describe("<ConnectSourceDialog>", () => {
     expect(closeCalls.length).toBeGreaterThan(0);
   });
 
+  it("R6 — initialement, footer affiche bouton 'Connecter' disabled (rien sélectionné)", () => {
+    render(<ConnectSourceDialog open={true} onOpenChange={() => {}} />);
+    expect(screen.queryByTestId("connect-submit")).toBeNull();
+    expect(screen.getByTestId("connect-submit-disabled")).toBeDefined();
+  });
+
   it("R2 — fournisseurs Bientôt ont badge 'Bientôt' visible", () => {
     render(<ConnectSourceDialog open={true} onOpenChange={() => {}} />);
-
     // 7 fournisseurs Bientôt (Airtable, GSheets, Excel, HubSpot, Salesforce, Notion, Shopify)
     const badges = screen.getAllByText("Bientôt");
     expect(badges.length).toBe(7);
