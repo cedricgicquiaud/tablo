@@ -62,11 +62,13 @@ export type CreateConnectionDeps = {
   encryptToken: (plain: string) => string;
   /**
    * Trigger fire-and-forget profileConnection (R21). Implémenté via `after()`
-   * dans le wrapper Server Action.
+   * dans le wrapper Server Action. Reçoit `baseId` pour construire un
+   * AirtableDataSource correctement scopé sur la base choisie.
    */
   triggerAfterProfileConnection: (params: {
     connectionId: string;
     encryptedAccessToken: string;
+    baseId: string;
   }) => void;
 };
 
@@ -133,6 +135,7 @@ export async function createConnectionFromAirtableBaseWithDeps(
   deps.triggerAfterProfileConnection({
     connectionId,
     encryptedAccessToken: config.access_token,
+    baseId: base.id,
   });
 
   return { connectionId, isReconnect };

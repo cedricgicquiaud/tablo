@@ -76,14 +76,14 @@ export async function createConnectionFromAirtableBase(formData: FormData) {
         }
       },
       encryptToken: encrypt,
-      triggerAfterProfileConnection: ({ connectionId, encryptedAccessToken }) => {
+      triggerAfterProfileConnection: ({
+        connectionId,
+        encryptedAccessToken,
+        baseId,
+      }) => {
         // R21 — fire-and-forget profileConnection (réutilise helper P0.4
         // cross-providers profile-after-oauth.ts).
         after(async () => {
-          // Cycle B pas encore livré → AirtableDataSource throw "not implemented".
-          // Le profileConnection catch silently via runProfileConnectionAfterOAuth
-          // (logWarn fire-and-forget). Quand B.3-B.4 seront livrés, le profiling
-          // marchera automatiquement sans changer A.5.
           const { AirtableDataSource } = await import(
             "@/lib/connectors/airtable/data-source"
           );
@@ -98,6 +98,7 @@ export async function createConnectionFromAirtableBase(formData: FormData) {
               buildDataSource: (token) =>
                 new AirtableDataSource({
                   connectionId,
+                  baseId,
                   getAccessToken: () => Promise.resolve(token),
                 }),
               profileConnection,

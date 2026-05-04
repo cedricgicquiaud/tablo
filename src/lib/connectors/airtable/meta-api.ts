@@ -24,6 +24,22 @@ export type AirtableBase = {
   permissionLevel: string;
 };
 
+export type AirtableField = {
+  id: string;
+  name: string;
+  /** Field type Airtable (singleLineText, number, multipleSelects, ...). */
+  type: string;
+  description?: string;
+  options?: Record<string, unknown>;
+};
+
+export type AirtableTableSchema = {
+  id: string;
+  name: string;
+  primaryFieldId: string;
+  fields: AirtableField[];
+};
+
 export class AirtableMetaApiError extends Error {
   constructor(
     public status: number,
@@ -72,6 +88,51 @@ export async function fetchBases(
   );
 
   return body.bases ?? [];
+}
+
+/**
+ * Fetch le schema des tables d'une base via API meta.
+ * Scope requis : `schema.bases:read`.
+ *
+ * Cf docs : https://airtable.com/developers/web/api/get-base-schema
+ */
+export async function fetchTablesSchema(
+  accessToken: string,
+  baseId: string,
+  opts: Pick<RetryOpts, "retryDelaysMs"> = {},
+): Promise<AirtableTableSchema[]> {
+  const url = `${AIRTABLE_API_BASE}/meta/bases/${baseId}/tables`;
+
+  const body = await withRetry(
+    async () => {
+      const res = await fetch(url, {
+        method: "GET",
+        headers: { authorization: `Bearer ${accessToken}` },
+      });
+
+      if (res.status === 429) {
+        throw new AirtableMetaApiError(429, "Airtable API rate limited (429)");
+      }
+
+      if (!res.ok) {
+        const text = await safeText(res);
+        throw new AirtableMetaApiError(
+          res.status,
+          `Airtable Meta API error ${res.status}: ${text}`,
+        );
+      }
+
+      return (await res.json()) as { tables?: AirtableTableSchema[] };
+    },
+    {
+      retryDelaysMs: opts.retryDelaysMs,
+      isRetryable: (err) =>
+        err instanceof AirtableMetaApiError && err.status === 429,
+      label: "airtable-meta-fetchTablesSchema",
+    },
+  );
+
+  return body.tables ?? [];
 }
 
 async function safeText(res: Response): Promise<string> {
