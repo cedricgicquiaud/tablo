@@ -30,6 +30,7 @@ export async function GET() {
   const state = randomUUID();
   const challenge = generateChallenge(verifier);
   const url = buildAuthorizeUrl({
+    authorizeUrl: "https://api.supabase.com/v1/oauth/authorize",
     clientId,
     redirectUri,
     state,

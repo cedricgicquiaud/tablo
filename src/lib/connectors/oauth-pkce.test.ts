@@ -28,8 +28,9 @@ describe("oauth-pkce", () => {
     expect(challenge).toBe("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM");
   });
 
-  it("buildAuthorizeUrl assemble l'URL avec tous les paramètres OAuth", () => {
+  it("buildAuthorizeUrl assemble l'URL avec tous les paramètres OAuth (Supabase default)", () => {
     const url = buildAuthorizeUrl({
+      authorizeUrl: "https://api.supabase.com/v1/oauth/authorize",
       clientId: "client-abc",
       redirectUri: "http://localhost:3000/oauth/supabase/callback",
       state: "state-xyz",
@@ -47,5 +48,20 @@ describe("oauth-pkce", () => {
     expect(u.searchParams.get("code_challenge")).toBe("challenge-123");
     expect(u.searchParams.get("code_challenge_method")).toBe("S256");
     expect(u.searchParams.get("scope")).toBe("database:write projects:read");
+  });
+
+  it("buildAuthorizeUrl accepte un authorizeUrl arbitraire (Airtable Phase 14.5)", () => {
+    const url = buildAuthorizeUrl({
+      authorizeUrl: "https://airtable.com/oauth2/v1/authorize",
+      clientId: "appXXX",
+      redirectUri: "http://localhost:3000/oauth/airtable/callback",
+      state: "abc",
+      codeChallenge: "challenge-airtable",
+      scopes: ["data.records:read", "schema.bases:read"],
+    });
+    const u = new URL(url);
+    expect(u.origin + u.pathname).toBe("https://airtable.com/oauth2/v1/authorize");
+    expect(u.searchParams.get("scope")).toBe("data.records:read schema.bases:read");
+    expect(u.searchParams.get("code_challenge_method")).toBe("S256");
   });
 });
