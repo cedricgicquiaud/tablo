@@ -173,10 +173,67 @@ describe("AirtableDataSource.inspectTable (R15, E13)", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("samples : V1 retourne array vide (B.4 fetchRecords pas requis pour inspect)", async () => {
-    const ds = makeDataSource();
+  it("smoke S7 fix — fetchTableRecordsFn retourne 3 records → samples flatten 3 entrées", async () => {
+    const fetchRecordsFn = vi.fn().mockResolvedValue({
+      records: [
+        { id: "rec1", createdTime: "2024-01-15T10:00:00Z", fields: { Name: "Alice", Email: "a@x.com" } },
+        { id: "rec2", createdTime: "2024-01-15T11:00:00Z", fields: { Name: "Bob", Email: "b@x.com" } },
+        { id: "rec3", createdTime: "2024-01-15T12:00:00Z", fields: { Name: "Charlie" } },
+      ],
+      truncated: false,
+    });
+    const ds = new AirtableDataSource({
+      connectionId: "conn_1",
+      baseId: "appA",
+      getAccessToken: async () => "tok",
+      fetchTablesSchemaFn: vi
+        .fn()
+        .mockResolvedValue(fakeSchema) as unknown as (
+        a: string,
+        b: string,
+      ) => Promise<typeof fakeSchema>,
+      fetchTableRecordsFn: fetchRecordsFn as unknown as (
+        opts: FetchTableRecordsOpts,
+      ) => Promise<FetchTableRecordsResult>,
+    });
+
     const detail = await ds.inspectTable("Customers");
+
+    expect(detail!.samples).toHaveLength(3);
+    expect(detail!.samples[0]).toMatchObject({ id: "rec1", name: "Alice" });
+    expect(fetchRecordsFn).toHaveBeenCalledWith({
+      accessToken: "tok",
+      baseId: "appA",
+      tableName: "Customers",
+      maxRecords: 3,
+    });
+  });
+
+  it("samples : fetchTableRecordsFn throw → fallback samples=[] (inspectTable ne casse pas)", async () => {
+    const fetchRecordsFn = vi
+      .fn()
+      .mockRejectedValue(new Error("network down"));
+    const ds = new AirtableDataSource({
+      connectionId: "conn_1",
+      baseId: "appA",
+      getAccessToken: async () => "tok",
+      fetchTablesSchemaFn: vi
+        .fn()
+        .mockResolvedValue(fakeSchema) as unknown as (
+        a: string,
+        b: string,
+      ) => Promise<typeof fakeSchema>,
+      fetchTableRecordsFn: fetchRecordsFn as unknown as (
+        opts: FetchTableRecordsOpts,
+      ) => Promise<FetchTableRecordsResult>,
+    });
+
+    const detail = await ds.inspectTable("Customers");
+
+    expect(detail).not.toBeNull();
     expect(detail!.samples).toEqual([]);
+    // Les columns sont quand même retournées (inspectTable ne casse jamais)
+    expect(detail!.columns.length).toBeGreaterThan(0);
   });
 });
 

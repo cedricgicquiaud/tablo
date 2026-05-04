@@ -35,6 +35,12 @@ export async function createConnectionFromAirtableBase(formData: FormData) {
 
   const admin = createSupabaseAdminClient();
 
+  // EVALUATE finding #1 : purger le cookie session AVANT toute action DB.
+  // Si createConnection... throw (insert fail, IDOR, encrypt fail), le cookie
+  // restait 600s avec tokens chiffrés (atténué par httpOnly+AES, mais hygiène).
+  // Pattern P14.4 callback : purge dans tous les paths.
+  cookieStore.delete(SESSION_COOKIE);
+
   const result = await createConnectionFromAirtableBaseWithDeps(
     { baseId, session },
     {
@@ -117,9 +123,6 @@ export async function createConnectionFromAirtableBase(formData: FormData) {
       },
     },
   );
-
-  // Cleanup cookie session
-  cookieStore.delete(SESSION_COOKIE);
 
   const redirectKey = result.isReconnect ? "reconnected" : "connected";
   redirect(`/app?${redirectKey}=airtable`);

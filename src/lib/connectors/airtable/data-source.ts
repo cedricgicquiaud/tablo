@@ -151,8 +151,14 @@ export class AirtableDataSource implements DataSource {
       samples = result.records.map((r) =>
         flattenAirtableRecord(r),
       ) as Record<string, unknown>[];
-    } catch {
-      // swallow : inspectTable doit toujours retourner les columns
+    } catch (err) {
+      // EVALUATE finding #3 : log pour visibilité diagnostic. Une erreur 401
+      // ici (token révoqué) ferait échouer runQuery ensuite — log aide à
+      // comprendre le pourquoi. Mais on swallow pour ne pas casser inspect.
+      console.warn(
+        `[airtable inspectTable] samples fetch failed for ${target.name}:`,
+        err instanceof Error ? err.message : "unknown",
+      );
     }
 
     return {

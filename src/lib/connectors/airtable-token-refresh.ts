@@ -74,6 +74,11 @@ const refreshing = new Map<string, Promise<string>>();
 /**
  * Pure logic refresh : retourne un access_token valide pour `connectionId`.
  * Si proche expiration ou expiré → refresh + persist nouveau refresh_token.
+ *
+ * Le token retourné est TOUJOURS en clair (déchiffré ou frais via refresh) —
+ * le caller (registry → AirtableDataSource) doit utiliser tel quel pour
+ * Bearer auth. Le chiffrement DB est interne (encryptToken/decryptToken
+ * via deps).
  */
 export async function getValidAirtableAccessTokenWithDeps(
   connectionId: string,
