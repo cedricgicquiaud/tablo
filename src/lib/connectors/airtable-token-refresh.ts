@@ -19,6 +19,7 @@
 
 import { decrypt, encrypt } from "@/lib/crypto/encryption";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { Json } from "@/lib/supabase/database.types";
 import {
   refreshAccessToken as refreshAirtableTokens,
   type AirtableTokenResponse,
@@ -185,7 +186,7 @@ export async function getValidAirtableAccessToken(
     updateConnection: async (id, config) => {
       await admin
         .from("connections")
-        .update({ config_jsonb: config as unknown as Record<string, unknown> })
+        .update({ config_jsonb: config as unknown as Json })
         .eq("id", id);
     },
     decryptToken: decrypt,

@@ -64,6 +64,11 @@ export function getDataSource(connection: Connection): DataSource {
         getStripeClient,
       });
     }
+    case "airtable":
+      // Wired in C.1 (Phase 14.5).
+      throw new Error(
+        "Connector kind 'airtable' not yet implemented (Phase 14.5 Cycle C.1).",
+      );
     case "postgres":
     case "csv":
       throw new Error(

@@ -1,7 +1,13 @@
 // Modèle métier des connexions et abstraction DataSource.
 // Chaque kind a son implémentation : DemoDataSource, SupabaseOAuthDataSource, etc.
 
-export type ConnectionKind = "demo" | "supabase" | "postgres" | "csv" | "stripe";
+export type ConnectionKind =
+  | "demo"
+  | "supabase"
+  | "postgres"
+  | "csv"
+  | "stripe"
+  | "airtable";
 
 export type Connection = {
   id: string;
