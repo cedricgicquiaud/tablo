@@ -25,6 +25,7 @@ import {
   ensureDemoAuthUser,
   truncateDemoTables,
 } from "../src/lib/supabase/admin";
+import { seedReferenceDate } from "../src/lib/seed/reference-date";
 import type { TablesInsert } from "../src/lib/supabase/database.types";
 import type { DashboardClient } from "../src/lib/supabase/types";
 
@@ -33,7 +34,7 @@ const TARGET_CUSTOMERS = 5000;
 const TARGET_ORDERS = 10000;
 const HISTORY_MONTHS = 12;
 const FAKER_SEED = 4242;
-const NOW = new Date("2026-04-26T12:00:00Z");
+const NOW = seedReferenceDate(new Date(), process.env.SEED_NOW);
 
 const PRODUCT_SEGMENT_WEIGHTS = [
   { value: SEGMENTS[0], weight: 0.5 },
