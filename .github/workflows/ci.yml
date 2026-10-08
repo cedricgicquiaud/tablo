@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    env:
+      # Valeurs factices : la CI ne touche aucune base ni aucun service réel.
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: ci-dummy-service-role-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      # Tests unitaires seulement : les projets db-integration et db-seed
+      # demandent Supabase local (Docker) et restent hors CI.
+      - name: Unit tests
+        run: |
+          # Clé jetable, générée à chaque run : jamais un secret réel.
+          export CONNECTOR_ENCRYPTION_KEY="$(openssl rand -hex 32)"
+          bun run test
+      - run: bun run build
