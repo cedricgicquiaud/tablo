@@ -39,4 +39,4 @@ limitations under the License.
 
 ## Attribution updates
 
-This NOTICE file is updated as new files derived from Nao are added during Phase 17 cycles B and C. See `.workflow/phases/17-ai-engine/PLAN.md` for the planned scope.
+This NOTICE file is updated whenever a new file derived from Nao is added.
