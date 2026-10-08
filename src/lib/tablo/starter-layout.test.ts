@@ -50,7 +50,7 @@ describe("nextPosition", () => {
   });
 
   it("T_A4.6 — kind inconnu → fallback dimensions raisonnables", () => {
-    // @ts-expect-error testing fallback
+    // nextPosition accepte n'importe quel kind (string) : le fallback est typé.
     const pos = nextPosition([], "unknown_kind");
     // Doit retourner une position valide (pas crash)
     expect(pos.w).toBeGreaterThan(0);

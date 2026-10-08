@@ -79,6 +79,9 @@ describe("flattenStripeCustomer", () => {
   });
 });
 
+// Fixtures partielles : seuls les champs lus par flatten sont fournis.
+type Sub = Parameters<typeof flattenStripeSubscription>[0];
+
 describe("flattenStripeSubscription", () => {
   const baseSub = {
     id: "sub_1",
@@ -103,7 +106,7 @@ describe("flattenStripeSubscription", () => {
     canceled_at: null,
     collection_method: "send_invoice",
     metadata: { crm_company_id: "comp_1", plan: "starter" },
-  } as unknown as Parameters<typeof flattenStripeSubscription>[0];
+  } as unknown as Sub;
 
   it("nominal — id, customer_id, status, plan_id, unit_amount_cents, interval", () => {
     const row = flattenStripeSubscription(baseSub);
@@ -143,7 +146,7 @@ describe("flattenStripeSubscription", () => {
           },
         ],
       },
-    };
+    } as unknown as Sub;
 
     const row = flattenStripeSubscription(subMulti);
 
@@ -155,7 +158,7 @@ describe("flattenStripeSubscription", () => {
   });
 
   it("items.data[0] absent → throw avec message clair", () => {
-    const subEmpty = { ...baseSub, id: "sub_empty", items: { data: [] } };
+    const subEmpty = { ...baseSub, id: "sub_empty", items: { data: [] } } as unknown as Sub;
 
     expect(() => flattenStripeSubscription(subEmpty)).toThrow(
       "Subscription sub_empty sans items.data[0]",
@@ -176,7 +179,7 @@ describe("flattenStripeSubscription", () => {
           },
         ],
       },
-    };
+    } as unknown as Sub;
 
     const row = flattenStripeSubscription(subNoNick);
 
