@@ -85,7 +85,7 @@ describe("executeInspectTable", () => {
   it("Table dans cache mais inconnue → cache miss → fallback DataSource", async () => {
     const cache = makeCacheWithDeals();
     const ds = makeMockDataSource();
-    const result = await executeInspectTable(ds, cache, { table_name: "unknown_table" });
+    await executeInspectTable(ds, cache, { table_name: "unknown_table" });
 
     // DataSource appelé pour fallback
     expect(ds.inspectTable).toHaveBeenCalledWith("unknown_table");

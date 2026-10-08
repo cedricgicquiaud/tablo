@@ -84,11 +84,14 @@ export type ConnectSourceDialogProps = {
 
 export function ConnectSourceDialog({ open, onOpenChange }: ConnectSourceDialogProps) {
   const [selectedSlug, setSelectedSlug] = React.useState<string | null>(null);
+  const [prevOpen, setPrevOpen] = React.useState(open);
 
-  // Reset selection à chaque ouverture pour éviter une sélection persistante.
-  React.useEffect(() => {
+  // Reset selection à la fermeture pour éviter une sélection persistante.
+  // Ajusté pendant le rendu (pas dans un effet) : pas de rendu en cascade.
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (!open) setSelectedSlug(null);
-  }, [open]);
+  }
 
   const selected = React.useMemo(
     () => PROVIDERS.find((p) => p.slug === selectedSlug && p.status === "active") ?? null,

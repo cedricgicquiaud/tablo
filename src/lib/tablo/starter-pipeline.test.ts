@@ -19,6 +19,7 @@ import {
   type WidgetGenerationOutcome,
 } from "./starter-pipeline";
 import type { WidgetConfig } from "@/lib/ai-engine/types/widget-schema";
+import type { SourceKind } from "@/lib/ai-engine/utils/detect-source-type";
 
 // Helper pour fabriquer des deps avec defaults sains.
 function makeDeps(overrides: Partial<StarterDeps> = {}): StarterDeps {
@@ -29,7 +30,7 @@ function makeDeps(overrides: Partial<StarterDeps> = {}): StarterDeps {
       { name: "orders", rowCount: 2300 },
       { name: "products", rowCount: 150 },
     ]),
-    detectSourceType: vi.fn(async () => "ecommerce"),
+    detectSourceType: vi.fn(async (): Promise<SourceKind> => "ecommerce"),
     generateWidget: vi.fn(async (prompt: string) => makeOkWidget(prompt)),
     pinWidget: vi.fn(async () => {}),
     isProfilingDone: vi.fn(async () => true),
@@ -46,14 +47,15 @@ function makeOkWidget(prompt: string, costUsd = 0.018): WidgetGenerationOutcome 
   const config: WidgetConfig = {
     kind: "metric_card",
     title: prompt,
+    icon: "revenue",
     format: "currency_eur_compact",
-    query: { sql: "SELECT 100 AS revenue" },
+    query: { type: "sql", sql: "SELECT 100 AS revenue" },
     mapping: { value: "revenue" },
   };
   return {
     ok: true,
     config,
-    data: { value: 100 } as unknown as WidgetGenerationOutcome["data"] extends infer T ? T : never,
+    data: { kind: "metric_card", value: 100, delta: null, sparkline: null },
     explanation: "ok",
     costUsd,
   };
@@ -62,7 +64,7 @@ function makeOkWidget(prompt: string, costUsd = 0.018): WidgetGenerationOutcome 
 describe("runStarterPipeline", () => {
   it("R3 — utilise le kit correspondant au sourceType détecté (ecommerce → 5 prompts)", async () => {
     const generateWidget = vi.fn(async (prompt: string) => makeOkWidget(prompt));
-    const deps = makeDeps({ detectSourceType: vi.fn(async () => "ecommerce"), generateWidget });
+    const deps = makeDeps({ detectSourceType: vi.fn(async (): Promise<SourceKind> => "ecommerce"), generateWidget });
 
     const result = await runStarterPipeline(deps);
 
@@ -164,9 +166,7 @@ describe("runStarterPipeline", () => {
   });
 
   it("R13 — budget cap global : cumul > $0.25 → abort widgets restants avec error budget_cap_exceeded", async () => {
-    let callIdx = 0;
     const generateWidget = vi.fn(async (prompt: string) => {
-      callIdx++;
       // 1er widget = $0.10, 2ème = $0.10, 3ème = $0.10 → cumul $0.30 > $0.25 après 3 widgets
       // Au 4ème prompt, cumul = $0.30 ≥ $0.25 → abort le 4ème
       return makeOkWidget(prompt, 0.1);

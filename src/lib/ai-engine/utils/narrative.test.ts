@@ -13,6 +13,7 @@ describe("validateNarrative", () => {
   it("texte vide → erreur", () => {
     const result = validateNarrative("");
     expect(result.ok).toBe(false);
+    if (result.ok) return;
     expect(result.error).toContain("narrative manquante");
   });
 

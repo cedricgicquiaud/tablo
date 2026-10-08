@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { SchemaCacheEntry } from "./schema-cache/types";
 import { createSSEStream } from "./utils/stream";
 import type { StreamEvent } from "./types/agent";
 
@@ -26,7 +27,7 @@ const {
   mockListTables: vi.fn(),
   mockInspectTable: vi.fn(),
   mockRunQuery: vi.fn(),
-  mockReadSchemaCache: vi.fn(async () => null),
+  mockReadSchemaCache: vi.fn(async (): Promise<SchemaCacheEntry | null> => null),
 }));
 
 vi.mock("@/lib/ai/anthropic", () => ({

@@ -118,6 +118,19 @@ describe("<ConnectSourceDialog>", () => {
     expect(screen.getByTestId("connect-submit-disabled")).toBeDefined();
   });
 
+  it("R6 — fermer puis rouvrir la modale efface la sélection", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<ConnectSourceDialog open={true} onOpenChange={() => {}} />);
+    await user.click(screen.getByTestId("provider-supabase"));
+    expect(screen.getByTestId("connect-submit")).toBeDefined();
+
+    rerender(<ConnectSourceDialog open={false} onOpenChange={() => {}} />);
+    rerender(<ConnectSourceDialog open={true} onOpenChange={() => {}} />);
+
+    expect(screen.queryByTestId("connect-submit")).toBeNull();
+    expect(screen.getByTestId("connect-submit-disabled")).toBeDefined();
+  });
+
   it("R2 — fournisseurs Bientôt ont badge 'Bientôt' visible", () => {
     render(<ConnectSourceDialog open={true} onOpenChange={() => {}} />);
     // 6 fournisseurs Bientôt après Phase 14.5 Airtable active
