@@ -95,7 +95,6 @@ describe("fetchTableRecords (R16, E14, RNF6)", () => {
     expect(result.truncated).toBe(false);
 
     // 2nd call passe offset
-    const [, opts2] = fetchMock.mock.calls[1] as [string, RequestInit];
     const url2 = fetchMock.mock.calls[1][0] as string;
     expect(url2).toContain("offset=off1");
   });

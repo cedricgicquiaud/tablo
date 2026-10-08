@@ -166,9 +166,7 @@ describe("runStarterPipeline", () => {
   });
 
   it("R13 — budget cap global : cumul > $0.25 → abort widgets restants avec error budget_cap_exceeded", async () => {
-    let callIdx = 0;
     const generateWidget = vi.fn(async (prompt: string) => {
-      callIdx++;
       // 1er widget = $0.10, 2ème = $0.10, 3ème = $0.10 → cumul $0.30 > $0.25 après 3 widgets
       // Au 4ème prompt, cumul = $0.30 ≥ $0.25 → abort le 4ème
       return makeOkWidget(prompt, 0.1);

@@ -14,7 +14,6 @@
  *    sql tronqué, rows_count, duration_ms, status (R36).
  */
 
-import type { DataSource } from "@/lib/connectors/types";
 import { validateReadOnlySql } from "@/lib/connectors/sql-validation";
 import { appendLimitIfMissing } from "../utils/sql-limit";
 import { truncateJsonResult } from "../utils/sql-truncate";

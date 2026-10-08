@@ -9,7 +9,7 @@
  * Cf docs : https://airtable.com/developers/web/api/list-records
  */
 
-import { withRetry, type RetryOpts } from "@/lib/utils/retry";
+import { withRetry } from "@/lib/utils/retry";
 import { AirtableMetaApiError } from "./meta-api";
 
 const AIRTABLE_API_BASE = "https://api.airtable.com/v0";
