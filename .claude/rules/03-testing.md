@@ -50,7 +50,7 @@ Source : 3 occurrences detectees (P14 OAuth, P15 design, P17 moteur AI).
 
 Pour les phases qui implementent un flow OAuth third-party (Supabase, Stripe Connect, future Airtable/HubSpot/Salesforce/etc.) : **smoke-tester le 1er round de bout en bout AVANT d'ecrire les unit tests sur les helpers**. La doc third-party ne reflete pas toujours le comportement reel, et beaucoup d'aspects (scopes acceptes, format endpoint URL, contraintes ajoutees recemment, branding, account auto-generation en mode test) ne sont visibles qu'en exercant le flow.
 
-Frictions Stripe Connect Standard documentees en P14.4 (cf `.workflow/phases/14.4-stripe-oauth-modal-sources/REVIEW.md`) : scope `read_only` refuse, URL `/oauth/v2/token` faux (vrai endpoint = `/oauth/token`), Dashboard UI refondue, comptes test generes a chaque OAuth, comptes connectes vides, branding plateforme.
+Frictions Stripe Connect Standard constatees en P14.4 : scope `read_only` refuse, URL `/oauth/v2/token` faux (vrai endpoint = `/oauth/token`), Dashboard UI refondue, comptes test generes a chaque OAuth, comptes connectes vides, branding plateforme.
 
 Pratique : ajouter un `[smoke S1] OAuth start → consent → callback OK` en cycle C1/C2 du PLAN, avant d'ecrire les unit tests sur les helpers OAuth. Si le smoke revele un decalage, ajuster les helpers AVANT d'enclencher le TDD.
 
@@ -92,7 +92,7 @@ Toute phase qui pose des RNF mesurables (latence, cout, throughput, taux de succ
 - Etre idempotent / nettoyer ses artefacts (ex : dashboard de test cree puis supprime, ou identifie comme `[BENCH]`).
 - Documenter ses prerequis (env vars, seed DB, etc.) dans un commentaire d'en-tete.
 
-Le bench artefact doit etre commit dans `.workflow/phases/NN-nom/BENCH-*.md` avec :
+Le bench artefact doit etre versionne dans le depot (ex. `docs/bench/BENCH-*.md`) avec :
 - Date d'execution
 - Tableau des RNF mesures vs cibles
 - Analyse comparative (avant / apres si refactor)
